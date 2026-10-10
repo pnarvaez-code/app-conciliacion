@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block contenido %}
+<h2>Auditoria</h2>
+<p class="tenue">Registro append-only: cada accion con su usuario, fecha e IP.
+Es la base para identificar responsables.</p>
+<section class="tarjeta">
+  <table>
+    <tr><th>Fecha</th><th>Usuario</th><th>Accion</th><th>Entidad</th>
+        <th>Detalle</th><th>IP</th></tr>
+    {% for r in registros %}
+    <tr>
+      <td>{{ r.created_at }}</td>
+      <td>{{ r.usuario or 'sistema' }}</td>
+      <td>{{ r.accion }}</td>
+      <td>{{ r.entidad }} {{ r.entidad_id or '' }}</td>
+      <td class="detalle">{{ r.detalle }}</td>
+      <td>{{ r.ip }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+</section>
+{% endblock %}

@@ -1,0 +1,8 @@
+# Ejecucion local del servicio (la base PostgreSQL es compartida; sus datos
+# de conexion se toman del archivo .env). En el VPS, Coolify usa el Dockerfile.
+services:
+  servicio-banco:
+    build: .
+    env_file: .env
+    ports:
+      - "8002:8002"

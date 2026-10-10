@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<extracto version="1.0">
+  <movimiento fecha="2026-09-01" monto="151000" referencia="FV-4001" descripcion="COBRO TARJETA"/>
+  <movimiento fecha="2026-09-01" monto="222000" referencia="FV-4002" descripcion="COBRO TARJETA"/>
+  <movimiento fecha="2026-09-01" monto="293000" referencia="FV-4003" descripcion="COBRO TARJETA"/>
+  <movimiento fecha="2026-09-01" monto="364000" referencia="FV-4004" descripcion="COBRO TARJETA"/>
+  <movimiento fecha="2026-09-01" monto="435000" referencia="FV-4005" descripcion="COBRO TARJETA"/>
+  <movimiento fecha="2026-09-01" monto="506000" referencia="FV-4006" descripcion="COBRO TARJETA"/>
+  <movimiento fecha="2026-09-01" monto="577000" referencia="FV-4007" descripcion="COBRO TARJETA"/>
+  <movimiento fecha="2026-09-01" monto="648000" referencia="FV-4008" descripcion="COBRO TARJETA"/>
+</extracto>

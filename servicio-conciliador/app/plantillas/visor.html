@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ servicio }} - visor en vivo</title>
+<link rel="stylesheet" href="/estaticos/estilos.css">
+<style>
+  .bloques-vivo { display: flex; gap: 8px; flex-wrap: wrap; }
+  .bloque-vivo { border: 1px solid #bfdfd6; background: #f2faf7; border-radius: 10px;
+                 padding: 8px 12px; min-width: 130px; font-size: 13px; }
+  .bloque-vivo small { display: block; color: #5b6b7a; }
+  .vivo { display: inline-block; width: 9px; height: 9px; border-radius: 50%;
+          background: #2fbf9f; margin-right: 6px; }
+</style>
+</head>
+<body>
+<nav class="barra">
+  <b>{{ servicio }}</b>
+  <a href="/">Panel</a><a href="/recepciones">Recepciones</a>
+  <a href="/conciliacion">Conciliacion</a><a href="/cadena">Cadena</a>
+  <a href="/visor">Visor</a><a href="/usuarios">Usuarios</a>
+  <a href="/alertas">Alertas</a><a href="/auditoria">Auditoria</a>
+  <span class="salir"><a href="/salir">Salir ({{ usuario.email }})</a></span>
+</nav>
+<main>
+<h2><span class="vivo"></span>Visor en vivo</h2>
+<p class="tenue">Se actualiza solo cada 3 segundos: cadena, recepciones,
+conciliacion y alertas.</p>
+
+<section class="tarjeta"><h3>Cadena (ultimos bloques)</h3>
+  <div id="cadena" class="bloques-vivo"></div>
+  <p id="cadena-aviso" class="tenue"></p>
+</section>
+<section class="tarjeta"><h3>Recepciones recientes</h3>
+  <table><tbody id="recepciones"></tbody></table>
+</section>
+<section class="tarjeta"><h3>Conciliacion</h3><div id="conciliacion"></div></section>
+</main>
+<script>
+"use strict";
+function pintar(datos) {
+  var cadena = document.getElementById("cadena");
+  cadena.innerHTML = "";
+  datos.cadena.forEach(function (b) {
+    var d = document.createElement("div");
+    d.className = "bloque-vivo";
+    d.innerHTML = "<b>#" + b.indice + " " + b.origen + "</b><small>" + b.lote +
+                  " · " + b.movimientos + " movs</small>";
+    cadena.appendChild(d);
+  });
+  document.getElementById("cadena-aviso").textContent =
+    datos.problemas_cadena.length
+      ? "Problemas en la cadena: " + datos.problemas_cadena.join("; ")
+      : "Cadena verificada. Alertas nuevas: " + datos.alertas_nuevas;
+
+  var cuerpo = document.getElementById("recepciones");
+  cuerpo.innerHTML = "";
+  datos.recepciones.forEach(function (r) {
+    var fila = document.createElement("tr");
+    fila.innerHTML = "<td>" + r.origen + "</td><td>" + r.archivo +
+                     "</td><td>" + r.estado + "</td>";
+    cuerpo.appendChild(fila);
+  });
+
+  var c = document.getElementById("conciliacion");
+  if (datos.conciliacion) {
+    var diferencias = Object.keys(datos.diferencias).length
+      ? " Diferencias: " + JSON.stringify(datos.diferencias) : " Sin diferencias.";
+    c.textContent = datos.conciliacion.conciliados + " de " +
+      datos.conciliacion.total + " (" + datos.conciliacion.porcentaje +
+      " %)." + diferencias;
+  } else {
+    c.textContent = "Todavia no se ejecuto ninguna conciliacion.";
+  }
+}
+function refrescar() {
+  fetch("/visor/estado").then(function (r) { return r.json(); })
+    .then(pintar).catch(function () { });
+}
+refrescar();
+setInterval(refrescar, 3000);
+</script>
+</body>
+</html>

@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block contenido %}
+<h2>Ventas registradas</h2>
+<div class="indicadores">
+  <div class="indicador"><span>{{ resumen.total }}</span>ventas</div>
+  <div class="indicador"><span>{{ "{:,}".format(resumen.monto_total).replace(",", ".") }}</span>guaranies</div>
+  <div class="indicador"><span>{{ resumen.pendientes }}</span>pendientes de cierre</div>
+  <div class="indicador"><span>{{ resumen.en_lote }}</span>en lotes sellados</div>
+</div>
+
+<section class="tarjeta">
+  <h3>Registrar venta</h3>
+  <form method="post" action="/movimientos" class="linea">
+    <div><label>Fecha</label><input type="date" name="fecha"></div>
+    <div><label>Monto</label><input type="number" name="monto" min="1" required></div>
+    <div><label>Descripcion</label><input type="text" name="descripcion"
+         placeholder="VENTA TARJETA"></div>
+    <div><label>Referencia (opcional)</label><input type="text" name="referencia"
+         placeholder="{{ proxima_referencia }}"></div>
+    <div><button type="submit">Registrar</button></div>
+  </form>
+  <p class="tenue">Las ventas quedan pendientes hasta el cierre del dia, donde se
+  generan el archivo y el sello de la cadena.</p>
+</section>
+
+<section class="tarjeta">
+  <h3>Listado</h3>
+  <table>
+    <tr><th>Fecha</th><th>Monto</th><th>Referencia</th><th>Descripcion</th>
+        <th>Estado</th><th>Lote</th><th></th></tr>
+    {% for m in movimientos %}
+    <tr>
+      <td>{{ m.fecha }}</td>
+      <td class="numero">{{ "{:,}".format(m.monto).replace(",", ".") }}</td>
+      <td>{{ m.referencia }}</td>
+      <td>{{ m.descripcion }}</td>
+      <td>{% if m.estado == 'pendiente' %}<span class="etiqueta pendiente">pendiente</span>
+          {% else %}<span class="etiqueta sellado">en lote sellado</span>{% endif %}</td>
+      <td>{{ m.lote_codigo or '' }}</td>
+      <td>
+        {% if m.estado == 'pendiente' %}
+        <a href="/movimientos/{{ m.id }}/editar">Editar</a>
+        <form method="post" action="/movimientos/{{ m.id }}/eliminar" class="enlinea">
+          <button class="peligro">Eliminar</button>
+        </form>
+        {% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+  </table>
+</section>
+{% endblock %}

@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block contenido %}
+<h2>Cadena de bloques (copia del conciliador)</h2>
+<section class="tarjeta">
+  <form method="post" action="/cadena/sincronizar">
+    <button type="submit">Sincronizar con los servicios</button>
+  </form>
+  <p class="tenue">El conciliador mantiene una copia completa de la cadena.
+  Sincronizar pide a la PYME y al banco los bloques que falten; cada bloque se
+  valida antes de guardarse.</p>
+  {% if problemas_cadena %}
+    <div class="error">Problemas detectados: {{ problemas_cadena|join('; ') }}</div>
+  {% else %}
+    <div class="aviso">Cadena verificada: los bloques encadenan correctamente.</div>
+  {% endif %}
+</section>
+<section class="tarjeta">
+  <table>
+    <tr><th>Indice</th><th>Origen</th><th>Lote</th><th>Movimientos</th>
+        <th>Hash anterior</th><th>Hash del bloque</th></tr>
+    {% for b in bloques %}
+    <tr><td>{{ b.indice }}</td><td>{{ b.origen }}</td><td>{{ b.lote_codigo }}</td>
+        <td>{{ b.n_movimientos }}</td>
+        <td class="huella">{{ b.hash_anterior[:20] }}...</td>
+        <td class="huella">{{ b.hash_bloque[:20] }}...</td></tr>
+    {% endfor %}
+  </table>
+</section>
+{% endblock %}

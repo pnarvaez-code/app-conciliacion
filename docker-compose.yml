@@ -1,0 +1,117 @@
+# Plataforma de conciliacion: los tres servicios y su base de datos en un
+# solo archivo.
+#
+# Local:   cp .env.example .env   (opcional: todo tiene valores por defecto)
+#          docker compose up -d --build
+#
+# Coolify: crear un unico recurso de tipo "Docker Compose" apuntando a este
+#          repositorio. Los dominios se asignan con las variables
+#          SERVICE_FQDN_* (ver README).
+#
+# Los tres servicios se comunican entre si por el nombre del servicio en la
+# red interna de Compose (http://banco:8002, etc.): no hace falta publicar
+# puertos ni usar URLs publicas para la propagacion de bloques.
+#
+# Para entrar desde el navegador en una instalacion local, descomentar la
+# linea "ports:" del servicio correspondiente.
+
+services:
+  # Base de datos unica con tres bases: una por servicio.
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${USUARIO_BASE_DATOS:-conciliacion}
+      POSTGRES_PASSWORD: ${CLAVE_BASE_DATOS:-conciliacion}
+      POSTGRES_DB: pyme
+    volumes:
+      - datos-postgres:/var/lib/postgresql/data
+      # Crea las bases banco y conciliador la primera vez (volumen vacio).
+      - ./infra/postgres:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${USUARIO_BASE_DATOS:-conciliacion} -d pyme"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+    restart: unless-stopped
+
+  # Sistema de ventas de la empresa.
+  pyme:
+    build: ./servicio-pyme
+    environment:
+      DATABASE_URL: postgresql://${USUARIO_BASE_DATOS:-conciliacion}:${CLAVE_BASE_DATOS:-conciliacion}@postgres:5432/pyme
+      CLAVE_SESION: ${CLAVE_SESION_PYME:-sesion-pyme-de-ejemplo}
+      TOKEN_SERVICIO: ${TOKEN_SERVICIO:-token-interno-de-ejemplo}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@ejemplo.com}
+      ADMIN_CLAVE: ${ADMIN_CLAVE:-conciliacion2026}
+      URL_BANCO: http://banco:8002
+      URL_CONCILIADOR: http://conciliador:8000
+      DIR_DATOS: /datos
+      PORT: 8001
+    expose:
+      - "8001"
+    # ports:
+    #   - "8001:8001"
+    volumes:
+      - datos-pyme:/datos
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # Movimientos de la cuenta y emision del extracto.
+  banco:
+    build: ./servicio-banco
+    environment:
+      DATABASE_URL: postgresql://${USUARIO_BASE_DATOS:-conciliacion}:${CLAVE_BASE_DATOS:-conciliacion}@postgres:5432/banco
+      CLAVE_SESION: ${CLAVE_SESION_BANCO:-sesion-banco-de-ejemplo}
+      TOKEN_SERVICIO: ${TOKEN_SERVICIO:-token-interno-de-ejemplo}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@ejemplo.com}
+      ADMIN_CLAVE: ${ADMIN_CLAVE:-conciliacion2026}
+      URL_PYME: http://pyme:8001
+      URL_CONCILIADOR: http://conciliador:8000
+      DIR_DATOS: /datos
+      PORT: 8002
+    expose:
+      - "8002"
+    # ports:
+    #   - "8002:8002"
+    volumes:
+      - datos-banco:/datos
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # Recepcion de archivos, verificacion de sellos y conciliacion.
+  conciliador:
+    build: ./servicio-conciliador
+    environment:
+      DATABASE_URL: postgresql://${USUARIO_BASE_DATOS:-conciliacion}:${CLAVE_BASE_DATOS:-conciliacion}@postgres:5432/conciliador
+      CLAVE_SESION: ${CLAVE_SESION_CONCILIADOR:-sesion-conciliador-de-ejemplo}
+      TOKEN_SERVICIO: ${TOKEN_SERVICIO:-token-interno-de-ejemplo}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@ejemplo.com}
+      ADMIN_CLAVE: ${ADMIN_CLAVE:-conciliacion2026}
+      URL_PYME: http://pyme:8001
+      URL_BANCO: http://banco:8002
+      DIR_DATOS: /datos
+      PORT: 8000
+    expose:
+      - "8000"
+    # ports:
+    #   - "8080:8000"
+    volumes:
+      - datos-conciliador:/datos
+    depends_on:
+      postgres:
+        condition: service_healthy
+      pyme:
+        condition: service_started
+      banco:
+        condition: service_started
+    restart: unless-stopped
+
+volumes:
+  datos-postgres:
+  datos-pyme:
+  datos-banco:
+  datos-conciliador:

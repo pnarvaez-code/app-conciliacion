@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ servicio }} - sistema de conciliacion</title>
+<link rel="stylesheet" href="/estaticos/estilos.css">
+</head>
+<body>
+<nav class="barra">
+  <b>{{ servicio }}</b>
+  <a href="/">Panel</a>
+  <a href="/recepciones">Recepciones</a>
+  <a href="/conciliacion">Conciliacion</a>
+  <a href="/cadena">Cadena</a>
+  <a href="/visor">Visor</a>
+  <a href="/usuarios">Usuarios</a>
+  <a href="/alertas">Alertas{% if alertas_nuevas %} ({{ alertas_nuevas }}){% endif %}</a>
+  <a href="/auditoria">Auditoria</a>
+  <span class="salir"><a href="/salir">Salir ({{ usuario.email }})</a></span>
+</nav>
+<main>
+{% if request.query_params.get('aviso') %}
+  <div class="aviso">{{ request.query_params.get('aviso') }}</div>
+{% endif %}
+{% block contenido %}{% endblock %}
+</main>
+</body>
+</html>

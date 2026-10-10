@@ -1,0 +1,21 @@
+# Complemento para usar la plataforma en local: agrega los puertos
+# publicados en la maquina para poder entrar desde el navegador.
+#
+#   docker compose -f docker-compose.yml -f docker-compose.local.yml up -d --build
+#
+# En un servidor con Coolify no se usa: ahi el proxy entra por la red interna
+# del compose. El conciliador queda en 8080 para no chocar con el panel de
+# Coolify, que usa el 8000.
+
+services:
+  pyme:
+    ports:
+      - "8001:8001"
+
+  banco:
+    ports:
+      - "8002:8002"
+
+  conciliador:
+    ports:
+      - "8080:8000"

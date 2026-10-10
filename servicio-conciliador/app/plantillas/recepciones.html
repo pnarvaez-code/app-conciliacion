@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block contenido %}
+<h2>Recepciones</h2>
+<section class="tarjeta">
+  <h3>Recibir archivo</h3>
+  <p class="tenue">Suba el archivo tal como llego (extracto del banco en CSV o
+  XML, archivo de ventas de la empresa en CSV). El sistema calcula su huella
+  y la compara con el sello que el emisor dejo en la cadena: si el archivo fue
+  tocado en el camino, queda marcado como alterado con el detalle.</p>
+  <form method="post" action="/recepciones" enctype="multipart/form-data" class="linea">
+    <div><label>Origen</label>
+      <label class="opcion"><input type="radio" name="origen" value="BANCO" checked> Banco</label>
+      <label class="opcion"><input type="radio" name="origen" value="EMPRESA"> Empresa</label>
+    </div>
+    <div><label>Archivo</label><input type="file" name="archivo" required></div>
+    <div><button type="submit">Recibir y verificar</button></div>
+  </form>
+</section>
+
+<section class="tarjeta">
+  <h3>Historial de recepciones</h3>
+  <table>
+    <tr><th>Fecha</th><th>Origen</th><th>Archivo</th><th>Lote</th>
+        <th>Estado</th><th>Detalle</th><th>Subido por</th></tr>
+    {% for r in recepciones %}
+    <tr>
+      <td>{{ r.verificado_en }}</td><td>{{ r.origen }}</td>
+      <td>{{ r.archivo }}</td><td>{{ r.lote_codigo or '' }}</td>
+      <td><span class="etiqueta {{ 'ok' if r.estado_integridad == 'intacto'
+            else ('media' if r.estado_integridad == 'sin_sello' else 'alta') }}">
+          {{ r.estado_integridad }}</span></td>
+      <td class="detalle">{{ r.detalle }}</td>
+      <td>{{ r.subido_por_email or '' }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+</section>
+{% endblock %}

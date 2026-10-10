@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block contenido %}
+<h2>Conciliacion</h2>
+<section class="tarjeta">
+  <form method="post" action="/conciliacion">
+    <button type="submit">Ejecutar conciliacion</button>
+  </form>
+  <p class="tenue">Se usan las ultimas recepciones intactas de cada parte: los
+  archivos alterados quedan fuera. Los pendientes se clasifican por tipo de
+  diferencia para el informe.</p>
+</section>
+
+{% if ultima %}
+<section class="tarjeta">
+  <h3>Ultimo informe ({{ ultima.created_at }})</h3>
+  <div class="indicadores">
+    <div class="indicador"><span>{{ ultima.conciliados }}</span>pares cruzados</div>
+    <div class="indicador"><span>{{ ultima.total_empresa }}</span>movimientos empresa</div>
+    <div class="indicador"><span>{{ ultima.total_banco }}</span>movimientos banco</div>
+    <div class="indicador"><span>{{ ultima.porcentaje }} %</span>conciliado</div>
+  </div>
+  {% if por_tipo %}
+  <p><b>Diferencias por tipo:</b>
+    {% for tipo, cantidad in por_tipo.items() %}
+      <span class="etiqueta media">{{ tipo }}: {{ cantidad }}</span>
+    {% endfor %}
+  </p>
+  {% else %}
+  <div class="aviso">Sin diferencias: todos los movimientos cruzaron.</div>
+  {% endif %}
+</section>
+
+<section class="tarjeta">
+  <h3>Pares cruzados ({{ pares|length }})</h3>
+  <table>
+    <tr><th>Nivel</th><th>Empresa</th><th>Banco</th></tr>
+    {% for p in pares[:50] %}
+    <tr>
+      <td>{{ p.nivel }}</td>
+      <td>{{ p.movimiento_empresa.fecha }} · {{ p.movimiento_empresa.descripcion }}
+          · {{ "{:,}".format(p.movimiento_empresa.monto).replace(",", ".") }}
+          ({{ p.movimiento_empresa.referencia or 'sin ref.' }})</td>
+      <td>{{ p.movimiento_banco.fecha }} · {{ p.movimiento_banco.descripcion }}
+          · {{ "{:,}".format(p.movimiento_banco.monto).replace(",", ".") }}
+          ({{ p.movimiento_banco.referencia or 'sin ref.' }})</td>
+    </tr>
+    {% endfor %}
+  </table>
+</section>
+
+<section class="tarjeta">
+  <h3>Diferencias y pendientes ({{ pendientes|length }})</h3>
+  <table>
+    <tr><th>Tipo de diferencia</th><th>Origen</th><th>Movimiento</th><th>Motivo</th></tr>
+    {% for d in pendientes %}
+    <tr>
+      <td><span class="etiqueta alta">{{ d.tipo_diferencia }}</span></td>
+      <td>{{ d.origen }}</td>
+      <td>{{ d.movimiento.fecha }} · {{ d.movimiento.descripcion }} ·
+          {{ "{:,}".format(d.movimiento.monto).replace(",", ".") }}</td>
+      <td class="detalle">{{ d.motivo }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+</section>
+{% else %}
+<section class="tarjeta"><p class="tenue">Todavia no se ejecuto ninguna
+conciliacion. Primero reciba los archivos en Recepciones.</p></section>
+{% endif %}
+{% endblock %}

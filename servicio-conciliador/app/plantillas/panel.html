@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block contenido %}
+<h2>Panel del auditor</h2>
+<div class="indicadores">
+  <div class="indicador"><span>{{ recepciones|length }}</span>recepciones recientes</div>
+  <div class="indicador"><span>{{ conciliaciones|length }}</span>conciliaciones</div>
+  <div class="indicador"><span>{{ alertas_nuevas }}</span>alertas nuevas</div>
+  <div class="indicador"><span>{% if problemas_cadena %}Con problemas{% else %}OK{% endif %}</span>cadena local</div>
+</div>
+
+<section class="tarjeta">
+  <h3>Flujo de trabajo</h3>
+  <ol class="pasos">
+    <li>Recibir los archivos: el extracto del banco y el archivo de ventas de
+        la empresa (Recepciones). El sistema verifica cada uno contra su sello.</li>
+    <li>Ejecutar la conciliacion: solo se usan las recepciones intactas.</li>
+    <li>Revisar el informe: pares cruzados y diferencias por tipo.</li>
+    <li>Atender las alertas y el registro de auditoria.</li>
+  </ol>
+</section>
+
+<section class="tarjeta">
+  <h3>Ultimas recepciones</h3>
+  <table>
+    <tr><th>Fecha</th><th>Origen</th><th>Archivo</th><th>Estado</th></tr>
+    {% for r in recepciones %}
+    <tr><td>{{ r.verificado_en }}</td><td>{{ r.origen }}</td><td>{{ r.archivo }}</td>
+        <td><span class="etiqueta {{ 'ok' if r.estado_integridad == 'intacto' else 'alta' }}">
+        {{ r.estado_integridad }}</span></td></tr>
+    {% endfor %}
+  </table>
+</section>
+
+<section class="tarjeta">
+  <h3>Ultimas conciliaciones</h3>
+  <table>
+    <tr><th>Fecha</th><th>Conciliados</th><th>Total</th><th>Porcentaje</th></tr>
+    {% for c in conciliaciones %}
+    <tr><td>{{ c.created_at }}</td><td>{{ c.conciliados }}</td>
+        <td>{{ c.total_empresa }}</td><td>{{ c.porcentaje }} %</td></tr>
+    {% endfor %}
+  </table>
+</section>
+{% endblock %}

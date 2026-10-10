@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block contenido %}
+<h2>Editar movimiento #{{ movimiento.id }}</h2>
+<section class="tarjeta">
+  <form method="post" action="/movimientos/{{ movimiento.id }}" class="linea">
+    <div><label>Fecha</label><input type="date" name="fecha"
+         value="{{ movimiento.fecha }}"></div>
+    <div><label>Monto</label><input type="number" name="monto" min="1"
+         value="{{ movimiento.monto }}"></div>
+    <div><label>Referencia</label><input type="text" name="referencia"
+         value="{{ movimiento.referencia }}"></div>
+    <div><label>Descripcion</label><input type="text" name="descripcion"
+         value="{{ movimiento.descripcion }}"></div>
+    <div><button type="submit">Guardar</button></div>
+  </form>
+  <p class="tenue">Solo se editan movimientos pendientes de emision. Una vez
+  sellados, la correccion se hace re-emitiendo el extracto (queda historial).</p>
+</section>
+{% endblock %}

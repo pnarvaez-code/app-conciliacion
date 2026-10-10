@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% block contenido %}
+<h2>Extractos y sellos</h2>
+<section class="tarjeta">
+  <div class="linea">
+    <form method="post" action="/lotes/cerrar">
+      <label>Formato del extracto</label>
+      <label class="opcion"><input type="radio" name="formato" value="csv" checked> CSV</label>
+      <label class="opcion"><input type="radio" name="formato" value="xml"> XML</label>
+      <button type="submit">Emitir extracto</button>
+    </form>
+    <form method="post" action="/lotes/reemitir">
+      <label>Re-emision</label>
+      <label class="opcion"><input type="radio" name="formato" value="csv" checked> CSV</label>
+      <label class="opcion"><input type="radio" name="formato" value="xml"> XML</label>
+      <button class="secundario" type="submit">Re-emitir ultimo extracto</button>
+    </form>
+  </div>
+  <p class="tenue">Emitir genera el extracto, lo guarda y crea el bloque sellado
+  (se propaga a los otros servicios). Re-emitir sella una version nueva del
+  mismo extracto: la anterior queda como historial. El extracto es el que viaja
+  hacia la empresa y el conciliador.</p>
+</section>
+
+<section class="tarjeta">
+  <h3>Extractos emitidos</h3>
+  <table>
+    <tr><th>Codigo</th><th>Movimientos</th><th>Sellado</th><th>Archivo</th>
+        <th>Huella (SHA-256)</th><th></th></tr>
+    {% for l in lotes %}
+    <tr>
+      <td>{{ l.codigo }}</td>
+      <td>{{ l.n_movimientos }}</td>
+      <td>{{ l.sellado_en }}</td>
+      <td>{{ l.archivo }}</td>
+      <td class="huella">{{ l.sha256[:24] }}...</td>
+      <td><a href="/lotes/{{ l.id }}/descargar">Descargar</a></td>
+    </tr>
+    {% endfor %}
+  </table>
+</section>
+
+<section class="tarjeta">
+  <h3>Cadena de bloques (copia local)</h3>
+  {% if problemas_cadena %}
+    <div class="error">Problemas detectados: {{ problemas_cadena|join('; ') }}</div>
+  {% else %}
+    <div class="aviso">Cadena verificada: los bloques encadenan correctamente.</div>
+  {% endif %}
+  <table>
+    <tr><th>Indice</th><th>Origen</th><th>Lote</th><th>Movimientos</th>
+        <th>Hash anterior</th><th>Hash del bloque</th></tr>
+    {% for b in bloques %}
+    <tr>
+      <td>{{ b.indice }}</td><td>{{ b.origen }}</td><td>{{ b.lote_codigo }}</td>
+      <td>{{ b.n_movimientos }}</td>
+      <td class="huella">{{ b.hash_anterior[:20] }}...</td>
+      <td class="huella">{{ b.hash_bloque[:20] }}...</td>
+    </tr>
+    {% endfor %}
+  </table>
+</section>
+<section class="tarjeta">
+  <h3>{{ 'Mis extractos emitidos' if servicio == 'BANCO' else 'Mis lotes emitidos' }}</h3>
+  <form method="post" action="/lotes/verificar">
+    <button type="submit">Verificar mis lotes emitidos</button>
+  </form>
+  <p class="tenue">Aplica los chequeos del emisor sobre cada lote propio: el
+  archivo guardado conserva su huella y los movimientos de la base coinciden
+  con el sello. Si algo cambio, queda la alerta con el detalle y el registro
+  de auditoria.</p>
+  <table>
+    <tr><th>Lote</th><th>Archivo</th><th>Movimientos</th><th>Estado</th><th>Detalle</th></tr>
+    {% for v in verificacion %}
+    <tr>
+      <td>{{ v.lote }}</td><td>{{ v.archivo }}</td><td>{{ v.movimientos }}</td>
+      <td><span class="etiqueta {{ 'sellado' if v.estado == 'intacto' else 'pendiente' }}">
+          {{ v.estado }}</span></td>
+      <td class="detalle">{{ v.detalle|join('; ') }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+</section>
+
+{% endblock %}

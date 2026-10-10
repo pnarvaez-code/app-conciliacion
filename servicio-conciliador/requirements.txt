@@ -1,0 +1,8 @@
+fastapi
+uvicorn[standard]
+jinja2
+psycopg[binary]
+bcrypt
+itsdangerous
+python-multipart
+httpx

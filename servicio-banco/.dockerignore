@@ -1,0 +1,7 @@
+# Archivos que no deben entrar en la imagen.
+.env
+datos/
+.venv/
+__pycache__/
+*.pyc
+.git/

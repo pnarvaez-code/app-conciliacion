@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block contenido %}
+<h2>Alertas</h2>
+<section class="tarjeta">
+  <table>
+    <tr><th>Fecha</th><th>Tipo</th><th>Severidad</th><th>Titulo</th>
+        <th>Detalle</th><th>Estado</th><th></th></tr>
+    {% for a in alertas %}
+    <tr>
+      <td>{{ a.created_at }}</td>
+      <td>{{ a.tipo }}</td>
+      <td><span class="etiqueta {{ a.severidad }}">{{ a.severidad }}</span></td>
+      <td>{{ a.titulo }}</td>
+      <td class="detalle">{{ a.detalle }}</td>
+      <td>{{ a.estado }}</td>
+      <td>
+        {% if a.estado == 'nueva' %}
+        <form method="post" action="/alertas/{{ a.id }}/estado" class="enlinea">
+          <input type="hidden" name="estado" value="leida">
+          <button class="secundario">Marcar leida</button>
+        </form>
+        {% elif a.estado == 'leida' %}
+        <form method="post" action="/alertas/{{ a.id }}/estado" class="enlinea">
+          <input type="hidden" name="estado" value="resuelta">
+          <button class="secundario">Resolver</button>
+        </form>
+        {% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+  </table>
+</section>
+{% endblock %}

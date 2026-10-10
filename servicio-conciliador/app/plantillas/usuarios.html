@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block contenido %}
+<h2>Usuarios</h2>
+<section class="tarjeta">
+  <h3>Crear usuario</h3>
+  <form method="post" action="/usuarios" class="linea">
+    <div><label>Correo</label><input type="email" name="email" required></div>
+    <div><label>Nombre</label><input type="text" name="nombre" required></div>
+    <div><label>Clave (minimo 8)</label><input type="password" name="clave"
+         minlength="8" required></div>
+    <div><button type="submit">Crear</button></div>
+  </form>
+</section>
+<section class="tarjeta">
+  <table>
+    <tr><th>Id</th><th>Correo</th><th>Nombre</th><th>Estado</th><th>Creado</th><th></th></tr>
+    {% for u in usuarios %}
+    <tr>
+      <td>{{ u.id }}</td><td>{{ u.email }}</td><td>{{ u.nombre }}</td>
+      <td>{% if u.activo %}activo{% else %}desactivado{% endif %}</td>
+      <td>{{ u.created_at }}</td>
+      <td>
+        <form method="post" action="/usuarios/{{ u.id }}/estado" class="enlinea">
+          <input type="hidden" name="activo" value="{{ 0 if u.activo else 1 }}">
+          <button class="secundario">
+            {% if u.activo %}Desactivar{% else %}Activar{% endif %}</button>
+        </form>
+      </td>
+    </tr>
+    {% endfor %}
+  </table>
+</section>
+{% endblock %}
