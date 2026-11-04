@@ -101,7 +101,7 @@ def clasificar_pendiente(movimiento, otros):
     un lado y no en el otro).
     """
     if not otros:
-        return "en_banco_no_empresa", "no se recibieron movimientos del otro lado"
+        return None, "no se recibieron movimientos del otro lado"
 
     mismo_monto_lejano = None
     mismo_dia = None

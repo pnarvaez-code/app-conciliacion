@@ -81,6 +81,27 @@ Con los movimientos de ejemplo ya cargados:
    exacto. Con `ejemplos/extracto_tocado_por_excel.csv` se ve el otro caso:
    un archivo reescrito por Excel que ya no se puede interpretar.
 
+### Demostracion estructurada
+
+El recorrido está preparado para presentar los tres escenarios:
+
+1. **Conciliación exitosa**: los archivos de ejemplo contienen coincidencias
+   de nivel 1 (referencia), nivel 2 (monto y fecha cercana) y nivel 3
+   (descripción y monto aproximado). Después de cerrar y sellar en PYME y
+   Banco, sincronice la cadena en el Conciliador, reciba ambos archivos como
+   `intactos`, ejecute la conciliación y muestre el resultado en **Visor**.
+2. **Diferencias genuinas**: agregue una venta pendiente de acreditación o
+   una comisión bancaria en uno solo de los servicios, cierre nuevamente,
+   reciba los archivos intactos y ejecute la conciliación. Use **Re-emitir
+   ultimo** para generar `-v2`; el bloque anterior queda visible en
+   **Cadena**, y la auditoría conserva ambas acciones.
+3. **Conciliación adulterada**: en Recepciones suba
+   `ejemplos/extracto_alterado.csv`; se marca `alterado` y el detalle señala
+   el movimiento `#3`. Suba después
+   `ejemplos/extracto_tocado_por_excel.csv`; el parser rechaza la línea 2.
+   Ambos casos generan alerta de severidad alta y quedan registrados con el
+   usuario responsable en **Auditoría**.
+
 Para editar a mano un archivo ya sellado (y ver la deteccion de integridad),
 se entra al contenedor con
 `docker compose -f docker-compose.yml -f docker-compose.local.yml exec pyme sh`

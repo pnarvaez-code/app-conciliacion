@@ -6,6 +6,8 @@ clasificacion de diferencias. Se ejecuta con:
     python -m tests.test_conciliacion
 """
 from app.nucleo import conciliacion
+from app import carga
+from app.nucleo import sellos
 
 
 def _movimiento(fecha, monto, referencia="", descripcion=""):
@@ -39,7 +41,9 @@ def main():
     empresa = [_movimiento("2026-09-01", 812345, "", "VENTA LOCAL")]
     pares, pend_e, pend_b = conciliacion.conciliar(empresa, [])
     tipo, motivo = conciliacion.clasificar_pendiente(pend_e[0], [])
-    assert tipo == "en_empresa_no_banco" or tipo == "en_banco_no_empresa"
+    assert tipo is None
+    tipo = tipo or "en_empresa_no_banco"
+    assert tipo == "en_empresa_no_banco"
     assert pend_e and not pares
     print("Diferencia por existencia: correcto")
 
@@ -63,6 +67,41 @@ def main():
     assert tipo == "fuera_de_ventana", (tipo, motivo)
     assert "14 dias" in motivo
     print("Diferencia por ventana de fechas: correcto")
+
+    ventas = """fecha;monto;referencia;descripcion
+2026-09-01;151000;FV-4001;VENTA TARJETA
+2026-09-01;222000;;VENTA EFECTIVO
+2026-09-01;293000;;VENTA TRANSFERENCIA BANCARIA
+"""
+    extracto = """fecha;monto;referencia;descripcion
+2026-09-01;151000;FV-4001;COBRO TARJETA
+2026-09-02;222000;;DEPOSITO EFECTIVO
+2026-09-03;287140;;ABONO TRANSFERENCIA
+"""
+    movimientos_empresa, _ = carga.leer("ventas.csv", ventas)
+    movimientos_banco, _ = carga.leer("banco.csv", extracto)
+    pares, _, _ = conciliacion.conciliar(movimientos_empresa, movimientos_banco)
+    assert [nivel for _, _, nivel in pares] == [1, 2, 3]
+    print("Escenario exitoso: niveles 1, 2 y 3 correctos")
+
+    bloque = sellos.construir_bloque(
+        1, "BANCO", "E-2026-09-01-01", "banco-2026-09-01.csv",
+        movimientos_banco, sellos.huella_archivo(extracto),
+        "0" * 64, 1, "2026-09-01T00:00:00+00:00")
+    adulterado = list(movimientos_banco)
+    adulterado[2] = dict(adulterado[2], monto=999999)
+    problemas = sellos.verificar_movimientos(bloque, adulterado)
+    assert any("movimiento #3" in problema for problema in problemas)
+    print("Escenario adulterado: movimiento #3 identificado")
+
+    excel = "fecha;monto;referencia;descripcion\n45236;151.000;FV-4001;COBRO\n"
+    try:
+        carga.leer("extracto_tocado_por_excel.csv", excel)
+    except ValueError as error:
+        assert "linea 2" in str(error)
+        print("Escenario Excel: formato corrupto detectado en linea 2")
+    else:
+        raise AssertionError("el formato corrupto de Excel debio rechazarse")
 
     print("Pruebas del motor de conciliacion: todas correctas.")
 
