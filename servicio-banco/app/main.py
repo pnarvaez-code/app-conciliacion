@@ -334,6 +334,13 @@ def ver_auditoria(request: Request):
                                                  registros=auditoria.listar()))
 
 
+@app.get("/reset", response_class=HTMLResponse)
+def ver_reset(request: Request):
+    usuario = _exigir_usuario(request)
+    return plantillas.TemplateResponse(request, "reset.html",
+                                       _contexto(request, usuario))
+
+
 @app.post("/auditoria/reset")
 def reset_datos(request: Request, email: str = Form(...),
                 clave: str = Form(...)):

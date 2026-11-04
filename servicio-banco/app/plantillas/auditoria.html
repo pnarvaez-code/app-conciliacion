@@ -3,27 +3,6 @@
 <h2>Auditoria</h2>
 <p class="tenue">Registro append-only: cada accion con su usuario, fecha e IP.
 Es la base para identificar responsables.</p>
-<section id="reset-datos" class="tarjeta">
-  <h3>Restablecer datos para una demostracion</h3>
-  <p class="tenue">Borra movimientos, lotes, archivos, alertas y sellos.
-    Las cuentas de usuario se conservan. Esta accion no se puede deshacer.</p>
-  <form method="post" action="/auditoria/reset"
-        onsubmit="return confirm('Se borraran todos los datos operativos. ¿Continuar?');">
-    <div class="linea">
-      <div>
-        <label for="reset-email">Correo del usuario actual</label>
-        <input id="reset-email" name="email" type="email" required
-               autocomplete="username">
-      </div>
-      <div>
-        <label for="reset-clave">Contraseña</label>
-        <input id="reset-clave" name="clave" type="password" required
-               autocomplete="current-password">
-      </div>
-      <button class="peligro" type="submit">Reset de datos</button>
-    </div>
-  </form>
-</section>
 <section class="tarjeta">
   <table>
     <tr><th>Fecha</th><th>Usuario</th><th>Accion</th><th>Entidad</th>

@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block contenido %}
+<h2>Reset</h2>
+<section class="tarjeta">
+  <form method="post" action="/auditoria/reset"
+        onsubmit="return confirm('Se borraran todos los datos operativos. ¿Continuar?');">
+    <div class="linea">
+      <div>
+        <label for="reset-email">Correo</label>
+        <input id="reset-email" name="email" type="email" required autocomplete="username">
+      </div>
+      <div>
+        <label for="reset-clave">Contraseña</label>
+        <input id="reset-clave" name="clave" type="password" required autocomplete="current-password">
+      </div>
+      <button class="peligro" type="submit">Confirmar reset</button>
+    </div>
+  </form>
+</section>
+{% endblock %}
