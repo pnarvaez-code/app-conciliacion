@@ -17,7 +17,7 @@ API interna para los otros servicios: ver app/internos.py.
 """
 import os
 
-from fastapi import FastAPI, Form, Request, UploadFile
+from fastapi import FastAPI, File, Form, Request, UploadFile
 from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
@@ -122,7 +122,7 @@ def ver_recepciones(request: Request):
 
 @app.post("/recepciones")
 async def subir_recepcion(request: Request, origen: str = Form(...),
-                          archivo: UploadFile = Form(...)):
+                          archivo: UploadFile = File(...)):
     usuario = _exigir_usuario(request)
     contenido = await archivo.read()
     try:

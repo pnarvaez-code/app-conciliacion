@@ -29,6 +29,16 @@ def main():
         assert cliente.get(ruta).status_code == 303, ruta
     print("Pantallas protegidas: todas redirigen al ingreso")
 
+    respuesta = cliente.post(
+        "/recepciones",
+        data={"origen": "EMPRESA"},
+        files={"archivo": ("ventas.csv", b"fecha;monto;referencia;descripcion\n",
+                            "text/csv")},
+    )
+    assert respuesta.status_code == 303
+    assert respuesta.headers["location"] == "/login"
+    print("Recepcion de archivos: ruta protegida y multipart correcta")
+
     assert cliente.get("/interno/salud").status_code == 401
     assert cliente.get("/interno/salud",
                        headers={"X-Servicio-Token": "incorrecto"}).status_code == 401
