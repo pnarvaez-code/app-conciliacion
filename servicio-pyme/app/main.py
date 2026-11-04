@@ -21,7 +21,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
 from app import (alertas, auditoria, cadena, cierre, config, db, importar,
-                 internos, movimientos, seguridad, verificacion)
+                 internos, movimientos, reset, seguridad, verificacion)
 
 BASE = os.path.dirname(os.path.abspath(__file__))
 app = FastAPI(title="Servicio PYME - sistema de ventas")
@@ -329,3 +329,17 @@ def ver_auditoria(request: Request):
     return plantillas.TemplateResponse(request, "auditoria.html",
                                        _contexto(request, usuario,
                                                  registros=auditoria.listar()))
+
+
+@app.post("/auditoria/reset")
+def reset_datos(request: Request, email: str = Form(...),
+                clave: str = Form(...)):
+    usuario = _exigir_usuario(request)
+    if not reset.ejecutar(email, clave, usuario["id"], seguridad.ip_de(request)):
+        auditoria.registrar(usuario["id"], "reset_rechazado", "aplicacion",
+                            None, {"email": email}, seguridad.ip_de(request))
+        return RedirectResponse(
+            "/auditoria?aviso=Credenciales+incorrectas%3A+no+se+realizo+el+reset",
+            status_code=303)
+    return RedirectResponse(
+        "/auditoria?aviso=Datos+operativos+restablecidos", status_code=303)
