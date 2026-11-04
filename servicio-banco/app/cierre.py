@@ -67,8 +67,7 @@ def _emitir(codigo, filas, usuario_id, ip, reemision, formato="csv"):
     """Genera el archivo, lo guarda, crea el lote y sella el bloque."""
     version = _siguiente_version(codigo)
     extension = "xml" if formato == "xml" else "csv"
-    nombre = "%s%s.%s" % (codigo, "" if version == 1 else "-v%d" % version,
-                          extension)
+    nombre = _nombre_archivo(version, extension)
     contenido = _xml(filas) if formato == "xml" else _csv(filas)
 
     archivo = archivos.guardar(nombre, contenido, "emitido", usuario_id)
@@ -115,6 +114,13 @@ def _siguiente_version(codigo):
     fila = db.consultar_uno("SELECT COUNT(*) AS total FROM bloques"
                             " WHERE lote_codigo = %s", (codigo,))
     return (fila["total"] if fila else 0) + 1
+
+
+def _nombre_archivo(version, extension):
+    """Nombre descargable: servicio y fecha del extracto."""
+    fecha = datetime.date.today().isoformat()
+    sufijo = "" if version == 1 else "-v%d" % version
+    return "banco-%s%s.%s" % (fecha, sufijo, extension)
 
 
 def _csv(filas):

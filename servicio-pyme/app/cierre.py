@@ -49,7 +49,7 @@ def listar_lotes(limite=100):
 def _emitir(codigo, filas, usuario_id, ip, reemision):
     """Genera el archivo, lo guarda, crea el lote y sella el bloque."""
     version = _siguiente_version(codigo)
-    nombre = "%s%s.csv" % (codigo, "" if version == 1 else "-v%d" % version)
+    nombre = _nombre_archivo(version)
     contenido = _csv(filas)
 
     archivo = archivos.guardar(nombre, contenido, "emitido", usuario_id)
@@ -95,6 +95,13 @@ def _siguiente_version(codigo):
     fila = db.consultar_uno("SELECT COUNT(*) AS total FROM bloques"
                             " WHERE lote_codigo = %s", (codigo,))
     return (fila["total"] if fila else 0) + 1
+
+
+def _nombre_archivo(version):
+    """Nombre descargable: servicio y fecha del cierre."""
+    fecha = datetime.date.today().isoformat()
+    sufijo = "" if version == 1 else "-v%d" % version
+    return "pyme-%s%s.csv" % (fecha, sufijo)
 
 
 def _csv(filas):
