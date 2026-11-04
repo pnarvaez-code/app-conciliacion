@@ -25,6 +25,7 @@ def recibir(origen, nombre, contenido, usuario_id, ip=None):
     origen = origen.upper()
     if origen not in ("EMPRESA", "BANCO"):
         raise ValueError("el origen debe ser EMPRESA o BANCO")
+    carga.leer(nombre, contenido.decode("utf-8", errors="replace"))
     archivo = archivos.guardar(nombre, contenido, usuario_id)
     estado, lote_codigo, detalle = _verificar(origen, archivo, contenido)
 

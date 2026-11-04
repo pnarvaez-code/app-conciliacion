@@ -6,6 +6,7 @@ del banco). Devuelve los movimientos en el esquema canonico que usan los
 sellos y el motor de conciliacion: fecha, monto, referencia, descripcion.
 """
 import xml.etree.ElementTree as ET
+from datetime import date
 
 CABECERA = "fecha;monto;referencia;descripcion"
 
@@ -32,7 +33,9 @@ def _leer_csv(contenido):
             monto = int(partes[1].strip())
         except ValueError:
             raise ValueError("linea %d: el monto no es un numero entero" % numero)
-        movimientos.append({"fecha": partes[0].strip(), "monto": monto,
+        fecha = partes[0].strip()
+        _validar_fecha(fecha, numero)
+        movimientos.append({"fecha": fecha, "monto": monto,
                             "referencia": partes[2].strip(),
                             "descripcion": partes[3].strip()})
     if not movimientos:
@@ -51,10 +54,21 @@ def _leer_xml(contenido):
             monto = int(nodo.get("monto", ""))
         except ValueError:
             raise ValueError("un movimiento del XML no tiene monto entero")
-        movimientos.append({"fecha": (nodo.get("fecha") or "").strip(),
+        fecha = (nodo.get("fecha") or "").strip()
+        _validar_fecha(fecha, "XML")
+        movimientos.append({"fecha": fecha,
                             "monto": monto,
                             "referencia": (nodo.get("referencia") or "").strip(),
                             "descripcion": (nodo.get("descripcion") or "").strip()})
     if not movimientos:
         raise ValueError("el XML no tiene movimientos")
     return movimientos
+
+
+def _validar_fecha(fecha, linea):
+    """Rechaza fechas que romperian el motor de conciliacion."""
+    try:
+        date.fromisoformat(fecha)
+    except ValueError:
+        raise ValueError("linea %s: la fecha debe tener formato AAAA-MM-DD"
+                         % linea)
