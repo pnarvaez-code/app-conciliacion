@@ -3,6 +3,10 @@
 Movimientos de la cuenta del cliente. Emite el extracto del periodo en CSV
 o XML, lo sella en la cadena de bloques y permite re-emitirlo (queda
 versionado). Verifica sus propios extractos emitidos.
+Desde el panel se pueden registrar movimientos en forma individual o importar
+hasta 10.000 filas pegando texto o cargando un archivo CSV/XML de hasta 5 MB.
+El formato es `fecha;monto;referencia;descripcion`; acepta fechas
+`dd/mm/aaaa` y referencias opcionales.
 
 - Puerto: 8002
 - Base: PostgreSQL propia (la migracion se aplica en el arranque)

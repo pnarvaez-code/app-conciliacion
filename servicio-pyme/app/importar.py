@@ -14,36 +14,116 @@ usuario responsable.
 Las referencias que ya existen se omiten, asi que se puede ejecutar mas de
 una vez sin duplicar movimientos.
 """
+import csv
 import sys
+import xml.etree.ElementTree as ET
+from datetime import datetime
 
 from app import auditoria, db, movimientos
 
 
-def leer(ruta):
-    """Lee el archivo (fecha;monto;referencia;descripcion) y devuelve sus filas."""
+MAX_FILAS = 10000
+
+
+def _fecha(valor, numero):
+    valor = (valor or "").strip()
+    for formato in ("%Y-%m-%d", "%d/%m/%Y", "%d/%m/%y"):
+        try:
+            return datetime.strptime(valor, formato).date().isoformat()
+        except ValueError:
+            pass
+    raise ValueError("linea %d: fecha invalida (use dd/mm/aaaa)" % numero)
+
+
+def _monto(valor, numero):
+    limpio = (str(valor or "").strip().replace(".", "").replace(" ", ""))
+    if limpio.endswith(",00"):
+        limpio = limpio[:-3]
+    try:
+        monto = int(limpio.replace(",", ""))
+    except ValueError:
+        raise ValueError("linea %d: el monto no es un numero entero" % numero)
+    if monto <= 0:
+        raise ValueError("linea %d: el monto debe ser positivo" % numero)
+    return monto
+
+
+def _fila(fecha, monto, referencia, descripcion, numero):
+    return {"fecha": _fecha(fecha, numero), "monto": _monto(monto, numero),
+            "referencia": (referencia or "").strip().upper(),
+            "descripcion": (descripcion or "").strip().upper()}
+
+
+def leer_texto(texto):
+    """Lee filas separadas por ; o , con cabecera opcional."""
     filas = []
-    with open(ruta, encoding="utf-8") as archivo:
-        for numero, linea in enumerate(archivo, start=1):
-            linea = linea.strip().lstrip("﻿")
-            if not linea:
-                continue
-            if numero == 1 and linea.lower().startswith("fecha"):
-                continue
-            partes = [parte.strip() for parte in linea.split(";")]
-            if len(partes) < 4:
-                raise ValueError("linea %d: no tiene 4 campos" % numero)
-            try:
-                monto = int(partes[1])
-            except ValueError:
-                raise ValueError("linea %d: el monto no es un numero entero" % numero)
-            if monto <= 0:
-                raise ValueError("linea %d: el monto debe ser positivo" % numero)
-            filas.append({"fecha": partes[0], "monto": monto,
-                          "referencia": partes[2].upper(),
-                          "descripcion": partes[3].upper()})
+    lineas = [linea for linea in texto.lstrip("\ufeff").splitlines() if linea.strip()]
+    if not lineas:
+        raise ValueError("el texto no tiene movimientos")
+    primera = lineas[0].lower()
+    tiene_cabecera = "fecha" in primera and "monto" in primera
+    inicio = 1 if tiene_cabecera else 0
+    delimitador = ";" if lineas[0].count(";") >= lineas[0].count(",") else ","
+    for numero, linea in enumerate(lineas[inicio:], start=inicio + 1):
+        partes = next(csv.reader([linea], delimiter=delimitador), [])
+        if len(partes) < 4:
+            raise ValueError("linea %d: se esperan fecha;monto;referencia;descripcion" % numero)
+        filas.append(_fila(partes[0], partes[1], partes[2], delimitador.join(partes[3:]), numero))
+        if len(filas) > MAX_FILAS:
+            raise ValueError("el archivo supera el maximo de %d movimientos" % MAX_FILAS)
     if not filas:
         raise ValueError("el archivo no tiene movimientos")
     return filas
+
+
+def leer_xml(texto):
+    """Lee movimientos XML con atributos o elementos de texto."""
+    try:
+        raiz = ET.fromstring(texto)
+    except ET.ParseError as error:
+        raise ValueError("XML invalido: %s" % error)
+    filas = []
+    elementos = [elemento for elemento in raiz.iter()
+                 if elemento.tag.lower().split("}")[-1] in ("movimiento", "venta", "transaction")]
+    for numero, elemento in enumerate(elementos, start=1):
+        valores = dict(elemento.attrib)
+        for hijo in elemento:
+            valores[hijo.tag.lower().split("}")[-1]] = (hijo.text or "").strip()
+        filas.append(_fila(valores.get("fecha"), valores.get("monto"),
+                           valores.get("referencia"), valores.get("descripcion"), numero))
+    if not filas:
+        raise ValueError("el XML no tiene movimientos")
+    return filas
+
+
+def leer_archivo(nombre, contenido):
+    extension = (nombre.rsplit(".", 1)[-1].lower() if "." in nombre else "csv")
+    if extension not in ("csv", "xml"):
+        raise ValueError("formato no soportado: use un archivo CSV o XML")
+    return leer_xml(contenido) if extension == "xml" else leer_texto(contenido)
+
+
+def importar_filas(filas, usuario_id, archivo):
+    creados, omitidos = 0, 0
+    for fila in filas:
+        if fila["referencia"]:
+            repetido = db.consultar_uno(
+                "SELECT id FROM movimientos WHERE referencia = %s",
+                (fila["referencia"],))
+            if repetido:
+                omitidos += 1
+                continue
+        movimientos.alta(fila["fecha"], fila["monto"], fila["referencia"],
+                         fila["descripcion"], usuario_id)
+        creados += 1
+    auditoria.registrar(usuario_id, "importar_movimientos", "movimientos", None,
+                        {"archivo": archivo, "creados": creados, "omitidos": omitidos})
+    return creados, omitidos
+
+
+def leer(ruta):
+    with open(ruta, encoding="utf-8") as archivo:
+        return leer_archivo(ruta, archivo.read())
 
 
 def main(ruta):
@@ -58,19 +138,7 @@ def main(ruta):
         print("No se pudo leer %s: %s" % (ruta, error))
         return 1
 
-    creados, omitidos = 0, 0
-    for fila in filas:
-        repetido = db.consultar_uno(
-            "SELECT id FROM movimientos WHERE referencia = %s", (fila["referencia"],))
-        if repetido:
-            omitidos += 1
-            continue
-        movimientos.alta(fila["fecha"], fila["monto"], fila["referencia"],
-                         fila["descripcion"], usuario["id"])
-        creados += 1
-
-    auditoria.registrar(usuario["id"], "importar_movimientos", "movimientos", None,
-                        {"archivo": ruta, "creados": creados, "omitidos": omitidos})
+    creados, omitidos = importar_filas(filas, usuario["id"], ruta)
     print("Importados %d movimientos de %s (%d omitidos por referencia repetida)."
           % (creados, ruta, omitidos))
     print("Responsable: %s" % usuario["email"])

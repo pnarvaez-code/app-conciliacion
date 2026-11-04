@@ -15,13 +15,13 @@ Cada accion relevante queda auditada con el usuario y la IP de origen.
 """
 import os
 
-from fastapi import FastAPI, Form, Request
+from fastapi import FastAPI, File, Form, Request, UploadFile
 from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
-from app import (alertas, auditoria, cadena, cierre, config, db, internos,
-                 movimientos, seguridad, verificacion)
+from app import (alertas, auditoria, cadena, cierre, config, db, importar,
+                 internos, movimientos, seguridad, verificacion)
 
 BASE = os.path.dirname(os.path.abspath(__file__))
 app = FastAPI(title="Servicio PYME - sistema de ventas")
@@ -116,6 +116,35 @@ def alta_movimiento(request: Request, fecha: str = Form(""), monto: int = Form(.
                         {"monto": monto, "referencia": fila["referencia"]},
                         seguridad.ip_de(request))
     return RedirectResponse("/?aviso=Venta+registrada", status_code=303)
+
+
+@app.post("/movimientos/importar")
+async def importar_movimientos(request: Request, texto: str = Form(""),
+                               archivo: UploadFile = File(None)):
+    usuario = _exigir_usuario(request)
+    if texto.strip() and archivo and archivo.filename:
+        return RedirectResponse(
+            "/?aviso=Use+texto+o+archivo%2C+no+ambos", status_code=303)
+    try:
+        if archivo and archivo.filename:
+            contenido = await archivo.read()
+            if len(contenido) > 5 * 1024 * 1024:
+                raise ValueError("el archivo supera el maximo de 5 MB")
+            filas = importar.leer_archivo(
+                archivo.filename, contenido.decode("utf-8-sig"))
+            origen = archivo.filename
+        elif texto.strip():
+            filas = importar.leer_texto(texto)
+            origen = "texto pegado"
+        else:
+            raise ValueError("ingrese texto o seleccione un archivo CSV/XML")
+        creados, omitidos = importar.importar_filas(filas, usuario["id"], origen)
+    except (UnicodeDecodeError, ValueError) as error:
+        from urllib.parse import quote_plus
+        return RedirectResponse("/?aviso=%s" % quote_plus(str(error)), status_code=303)
+    return RedirectResponse(
+        "/?aviso=Importados+%d+movimientos%2C+%d+omitidos+por+referencia"
+        % (creados, omitidos), status_code=303)
 
 
 @app.get("/movimientos/{movimiento_id}/editar", response_class=HTMLResponse)

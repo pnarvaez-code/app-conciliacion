@@ -3,6 +3,10 @@
 Ventas de la empresa. Registra los movimientos del dia, cierra el lote
 generando el archivo CSV del periodo y lo sella en la cadena de bloques.
 Permite re-emitir (queda versionado) y verificar sus propios lotes.
+Desde el panel se pueden registrar ventas en forma individual o importar hasta
+10.000 movimientos pegando texto o cargando un archivo CSV/XML de hasta 5 MB.
+El formato es `fecha;monto;referencia;descripcion`; acepta fechas
+`dd/mm/aaaa` y referencias opcionales.
 
 - Puerto: 8001
 - Base: PostgreSQL propia (la migracion se aplica en el arranque)
