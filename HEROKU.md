@@ -38,7 +38,24 @@ Copia las URL HTTPS asignadas por Heroku en las variables de comunicacion:
 
 Usa las URL completas con https://. Puedes verlas en los dominios de cada app aunque todavia no este desplegada.
 
-## 4. Desplegar
+## 4. Verificar las conexiones entre las tres aplicaciones
+
+Las conexiones deben quedar configuradas en una sola direccion: PYME y Banco
+envian sus bloques al Conciliador; el Conciliador consulta a ambos para
+recuperar bloques que falten. En cada aplicacion se puede comprobar la API
+interna con:
+
+```bash
+curl -i -H "X-Servicio-Token: VALOR_DE_TOKEN_SERVICIO" \
+  https://DOMINIO_DE_LA_APP/interno/salud
+```
+
+La respuesta correcta es `200` con `"estado":"ok"`. Una respuesta `401`
+indica token distinto o ausente; un error de conexion indica una URL,
+dominio o despliegue incorrecto. Repite la comprobacion para PYME, Banco y
+Conciliador antes de probar **Cadena → Sincronizar** en el Conciliador.
+
+## 5. Desplegar
 
 Despliega primero PYME y banco; luego el conciliador. En cada app, usa Deploy Branch o habilita despliegues automaticos desde GitHub. Al iniciar, el proceso selecciona el servicio indicado por SERVICE, aplica la migracion inicial si la base esta vacia, crea el administrador inicial y arranca Uvicorn usando el puerto PORT asignado por Heroku.
 

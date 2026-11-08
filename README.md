@@ -1,155 +1,449 @@
-# Plataforma de conciliacion con integridad verificable
+# Plataforma de conciliación con integridad verificable
 
-Tres servicios independientes que trabajan en conjunto: la PYME emite sus
-ventas, el banco emite su extracto y el conciliador recibe ambos archivos,
-verifica los sellos y concilia.
+Aplicación compuesta por tres servicios FastAPI que trabajan como una
+plataforma de conciliación:
 
-Cada servicio es una aplicacion FastAPI con su propia base PostgreSQL, su
-propio ingreso con sesion, su auditoria y una copia de la cadena de bloques.
-Los bloques se propagan entre servicios por una API interna protegida con
-un token compartido.
+1. **PYME** administra las ventas y genera el archivo de ventas.
+2. **Banco** administra los movimientos bancarios y genera el extracto.
+3. **Conciliador** recibe ambos archivos, verifica sus sellos y ejecuta la
+   conciliación.
 
-| Carpeta | Puerto | Rol |
-|---|---|---|
-| `servicio-pyme` | 8001 | Ventas de la empresa y cierre del dia (CSV + sello) |
-| `servicio-banco` | 8002 | Movimientos de la cuenta y extracto (CSV o XML + sello) |
-| `servicio-conciliador` | 8000 | Recepcion de archivos, verificacion de sellos y conciliacion |
+Cada servicio tiene su propia aplicación, base de datos PostgreSQL, usuarios,
+sesiones, auditoría y copia de los bloques que le corresponden.
 
-## Puesta en marcha en local
+## Arquitectura actual
 
-Hace falta Docker con Compose (en Windows, Docker Desktop). Los comandos son
-los mismos en Windows, macOS y Linux, y se ejecutan dentro de la carpeta del
-repositorio.
+| Servicio | Carpeta | Puerto local | Función |
+|---|---|---:|---|
+| PYME | `servicio-pyme` | `8001` | Ventas, cierres, CSV y sellado |
+| Banco | `servicio-banco` | `8002` | Movimientos, extractos CSV/XML y sellado |
+| Conciliador | `servicio-conciliador` | `8000` interno / `8080` local | Recepción, verificación y conciliación |
 
-### 1. Levantar todo desde cero
+### Sincronización de la cadena
 
-```bash
-docker compose -f docker-compose.yml -f docker-compose.local.yml down -v --remove-orphans
-docker compose -f docker-compose.yml -f docker-compose.local.yml up -d --build
+PYME y Banco mantienen **cadenas independientes**. Cada servicio propaga sus
+bloques únicamente al Conciliador mediante la API interna protegida por
+`X-Servicio-Token`.
+
+El Conciliador también puede recuperar bloques faltantes consultando a PYME y
+Banco desde **Cadena → Sincronizar**. La validación se realiza por origen:
+
+```text
+PYME  ──propaga──> Conciliador
+Banco ──propaga──> Conciliador
+PYME  <──consulta── Conciliador
+Banco <──consulta── Conciliador
 ```
 
-El primer arranque tarda un poco: PostgreSQL crea las tres bases y despues
-cada servicio aplica su migracion y crea su usuario administrador.
+No se mezclan los índices de PYME y Banco. El Conciliador valida cada cadena
+por separado y conserva conflictos o errores como alertas de integridad.
 
-### 2. Cargar los movimientos de ejemplo
+## Requisitos
 
-Cuando las direcciones de la tabla ya respondan en el navegador:
+- Python 3.11 o superior.
+- Docker y Docker Compose para la instalación local recomendada.
+- PostgreSQL 14 o superior si se ejecuta sin Docker.
+- Para Heroku: tres aplicaciones Heroku y una base Heroku Postgres para cada
+  aplicación.
+
+## Instalación local con Docker Compose
+
+Todos los comandos se ejecutan desde la raíz del repositorio.
+
+### 1. Configurar el entorno
 
 ```bash
-docker compose -f docker-compose.yml -f docker-compose.local.yml exec -T pyme python -m app.importar ejemplos/ventas_ejemplo.csv
-docker compose -f docker-compose.yml -f docker-compose.local.yml exec -T banco python -m app.importar ejemplos/extracto_ejemplo.csv
+cp .env.example .env
 ```
 
-Cada comando informa cuantos movimientos cargo y quien quedo como responsable
-en la auditoria. Se pueden repetir: las referencias ya cargadas se omiten.
+En Windows PowerShell:
 
-### 3. Entrar
+```powershell
+Copy-Item .env.example .env
+```
 
-| Servicio | Direccion | Usuario y clave iniciales |
-|---|---|---|
-| PYME | http://localhost:8001 | `admin@ejemplo.com` / `conciliacion2026` |
-| Banco | http://localhost:8002 | idem |
-| Conciliador | http://localhost:8080 | idem |
+Para una demostración local se pueden conservar los valores de ejemplo. Para
+un entorno compartido, cambiar como mínimo `CLAVE_BASE_DATOS`,
+`TOKEN_SERVICIO`, las tres claves de sesión y `ADMIN_CLAVE`.
 
-### Otros comandos
+### 2. Iniciar los cuatro contenedores
 
 ```bash
-# Registros de un servicio (Ctrl+C para salir)
+docker compose \
+  -f docker-compose.yml \
+  -f docker-compose.local.yml \
+  up -d --build
+```
+
+La primera ejecución:
+
+- inicia PostgreSQL;
+- crea las bases `pyme`, `banco` y `conciliador`;
+- ejecuta la migración inicial de cada servicio;
+- crea el administrador inicial;
+- inicia las tres aplicaciones.
+
+Para iniciar desde cero y borrar los datos existentes:
+
+```bash
+docker compose \
+  -f docker-compose.yml \
+  -f docker-compose.local.yml \
+  down -v --remove-orphans
+docker compose \
+  -f docker-compose.yml \
+  -f docker-compose.local.yml \
+  up -d --build
+```
+
+El comando `down -v` elimina las bases y los archivos almacenados. Usarlo
+solo cuando se quiera reiniciar la demostración.
+
+### 3. Abrir las aplicaciones
+
+| Servicio | URL | Usuario inicial |
+|---|---|---|
+| PYME | `http://localhost:8001` | `admin@ejemplo.com` |
+| Banco | `http://localhost:8002` | `admin@ejemplo.com` |
+| Conciliador | `http://localhost:8080` | `admin@ejemplo.com` |
+
+La clave inicial se toma de `ADMIN_CLAVE`. El valor de ejemplo es
+`conciliacion2026`; debe cambiarse antes de usar información real.
+
+### 4. Revisar logs y estado
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.local.yml ps
 docker compose -f docker-compose.yml -f docker-compose.local.yml logs -f pyme
-
-# Apagar (conserva los datos)
-docker compose -f docker-compose.yml -f docker-compose.local.yml down
-
-# Apagar y borrar los datos
-docker compose -f docker-compose.yml -f docker-compose.local.yml down -v
+docker compose -f docker-compose.yml -f docker-compose.local.yml logs -f banco
+docker compose -f docker-compose.yml -f docker-compose.local.yml logs -f conciliador
 ```
 
-Las variables de entorno son opcionales: todas tienen valores por defecto.
-Para cambiarlas, copiar `.env.example` a `.env` (`copy .env.example .env` en
-CMD, `Copy-Item .env.example .env` en PowerShell) y editar el archivo.
+## Flujo funcional completo
 
-### Recorrido de prueba
+### 1. Cargar movimientos
 
-Con los movimientos de ejemplo ya cargados:
+Desde la interfaz se pueden registrar movimientos o importar archivos. Para
+importar los ejemplos dentro de los contenedores:
 
-1. **PYME**: *Cerrar lote y exportar* y descargar el archivo.
-2. **Banco**: *Emitir extracto* en CSV o XML y descargarlo.
-3. **Conciliador**: subir los dos archivos en *Recepciones* y ejecutar la
-   conciliacion: el informe muestra los pares por nivel y las diferencias.
-4. **Alteracion**: subir `ejemplos/extracto_alterado.csv` (un monto cambiado,
-   mismo formato) y queda marcado como `ALTERADO` señalando el movimiento
-   exacto. Con `ejemplos/extracto_tocado_por_excel.csv` se ve el otro caso:
-   un archivo reescrito por Excel que ya no se puede interpretar.
+```bash
+docker compose -f docker-compose.yml -f docker-compose.local.yml \
+  exec -T pyme python -m app.importar ejemplos/ventas_ejemplo.csv
 
-### Demostracion estructurada
+docker compose -f docker-compose.yml -f docker-compose.local.yml \
+  exec -T banco python -m app.importar ejemplos/extracto_ejemplo.csv
+```
 
-El recorrido está preparado para presentar los tres escenarios:
+Las referencias duplicadas se omiten y la importación queda registrada en
+Auditoría.
 
-1. **Conciliación exitosa**: los archivos de ejemplo contienen coincidencias
-   de nivel 1 (referencia), nivel 2 (monto y fecha cercana) y nivel 3
-   (descripción y monto aproximado). Después de cerrar y sellar en PYME y
-   Banco, sincronice la cadena en el Conciliador, reciba ambos archivos como
-   `intactos`, ejecute la conciliación y muestre el resultado en **Visor**.
-2. **Diferencias genuinas**: agregue una venta pendiente de acreditación o
-   una comisión bancaria en uno solo de los servicios, cierre nuevamente,
-   reciba los archivos intactos y ejecute la conciliación. Use **Re-emitir
-   ultimo** para generar `-v2`; el bloque anterior queda visible en
-   **Cadena**, y la auditoría conserva ambas acciones.
-3. **Conciliación adulterada**: en Recepciones suba
-   `ejemplos/extracto_alterado.csv`; se marca `alterado` y el detalle señala
-   el movimiento `#3`. Suba después
-   `ejemplos/extracto_tocado_por_excel.csv`; el parser rechaza la línea 2.
-   Ambos casos generan alerta de severidad alta y quedan registrados con el
-   usuario responsable en **Auditoría**.
+### 2. Cerrar y sellar
 
-Para editar a mano un archivo ya sellado (y ver la deteccion de integridad),
-se entra al contenedor con
-`docker compose -f docker-compose.yml -f docker-compose.local.yml exec pyme sh`
-y los archivos estan en `/datos/archivos`. Tambien se puede cambiar el volumen
-por una carpeta propia: `datos-pyme:/datos` -> `./datos/pyme:/datos`.
+En PYME:
 
-## Despliegue en Heroku
+1. Abrir **Lotes**.
+2. Seleccionar **Cerrar lote y exportar**.
+3. Descargar el archivo de ventas.
 
-Heroku requiere tres aplicaciones (una por servicio) conectadas al mismo repositorio, cada una con su propia base PostgreSQL y variables de entorno. Segui la guia paso a paso en [HEROKU.md](HEROKU.md). El despliegue de Heroku usa Procfile y heroku_start.py; Docker Compose sigue siendo para uso local.
+En Banco:
 
-## Despliegue en un servidor (Coolify)
+1. Abrir **Lotes**.
+2. Seleccionar **Emitir extracto**.
+3. Descargar el extracto CSV o XML.
 
-Un unico recurso de tipo **Docker Compose** desde este repositorio, con
-`docker-compose.yml` como archivo. Los dominios se asignan definiendo
-`SERVICE_FQDN_PYME_8001`, `SERVICE_FQDN_BANCO_8002` y
-`SERVICE_FQDN_CONCILIADOR_8000` con la URL de cada uno; si no se definen,
-Coolify genera uno por servicio. En ese entorno no se usa
-`docker-compose.local.yml`: el ruteo lo hace el proxy por la red interna.
+Cada cierre crea un bloque con:
 
-## Un servicio suelto
+- hash SHA-256 del archivo;
+- hash de cada movimiento;
+- hash raíz de los movimientos;
+- índice y hash del bloque anterior;
+- fecha, origen y usuario emisor.
 
-Cada carpeta trae su Dockerfile, su `.env.example` y su `docker-compose.yml`
-para levantarlo por separado y conectarlo a otra base.
+Los bloques nuevos se envían automáticamente al Conciliador. Si un servicio
+está temporalmente fuera de línea, el envío queda en `bloques_envios` y se
+reintenta durante el arranque.
+
+### 3. Sincronizar en el Conciliador
+
+En el Conciliador:
+
+1. Abrir **Cadena**.
+2. Pulsar **Sincronizar**.
+3. Confirmar que aparecen bloques de origen `PYME` y `BANCO`.
+
+La sincronización consulta a cada origen desde su último índice local. Un
+bloque repetido se acepta como ya existente; un conflicto de hash o de
+encadenamiento genera una alerta.
+
+### 4. Recibir y verificar archivos
+
+En **Recepciones** subir:
+
+1. el archivo emitido por PYME con origen `EMPRESA`;
+2. el extracto emitido por Banco con origen `BANCO`.
+
+El Conciliador compara cada archivo con su sello. Los estados principales son:
+
+- `intacto`: el archivo coincide con el sello;
+- `alterado`: cambió el contenido o un movimiento;
+- `formato_invalido`: el archivo no puede interpretarse;
+- `sin_sello`: no existe un bloque correspondiente.
+
+### 5. Ejecutar la conciliación
+
+En **Conciliación**, ejecutar el proceso para obtener:
+
+- movimientos conciliados por referencia exacta;
+- coincidencias por monto y fecha;
+- coincidencias por descripción y monto aproximado;
+- movimientos pendientes;
+- diferencias de existencia, monto, fecha o referencia.
+
+El **Visor** muestra el estado actualizado de la cadena, recepciones,
+conciliación y alertas.
+
+## Verificación de las tres conexiones
+
+La API interna de cada aplicación requiere el mismo `TOKEN_SERVICIO`. Para
+probar una aplicación desplegada:
+
+```bash
+curl -i \
+  -H "X-Servicio-Token: VALOR_REAL_DEL_TOKEN" \
+  https://DOMINIO_DE_LA_APLICACION/interno/salud
+```
+
+Una conexión correcta devuelve HTTP `200` y un resultado similar a:
+
+```json
+{"estado":"ok","servicio":"PYME","ultimo_indice":0}
+```
+
+Probar los tres dominios:
+
+```text
+https://DOMINIO-PYME/interno/salud
+https://DOMINIO-BANCO/interno/salud
+https://DOMINIO-CONCILIADOR/interno/salud
+```
+
+Interpretación de errores:
+
+| Resultado | Significado |
+|---|---|
+| `200` | Servicio disponible y token correcto |
+| `401` | Falta `X-Servicio-Token` o no coincide |
+| `404` | URL o ruta incorrecta |
+| Timeout / error DNS | Dominio, despliegue o conexión incorrecta |
+| `500` | Revisar logs y conexión `DATABASE_URL` |
+
+## Despliegue detallado en Heroku
+
+Heroku ejecuta este monorepo como **tres aplicaciones independientes**. No
+se despliega `docker-compose.yml` en Heroku.
+
+### 1. Crear las aplicaciones
+
+Crear tres aplicaciones, por ejemplo:
+
+```bash
+heroku create nombre-pyme
+heroku create nombre-banco
+heroku create nombre-conciliador
+```
+
+Conectar las tres al mismo repositorio y a la misma rama. Cada aplicación
+debe usar la raíz del repositorio como directorio de despliegue.
+
+### 2. Agregar una base PostgreSQL a cada aplicación
+
+```bash
+heroku addons:create heroku-postgresql:essential-0 --app nombre-pyme
+heroku addons:create heroku-postgresql:essential-0 --app nombre-banco
+heroku addons:create heroku-postgresql:essential-0 --app nombre-conciliador
+```
+
+Heroku crea `DATABASE_URL` automáticamente. No copiar la URL de una base a
+otra aplicación: cada servicio necesita su propia base.
+
+### 3. Configurar variables
+
+Generar secretos:
+
+```bash
+python -c "import secrets; print(secrets.token_urlsafe(48))"
+```
+
+Configurar cada aplicación:
+
+```bash
+heroku config:set SERVICE=pyme \
+  CLAVE_SESION="SECRETO_UNICO_PYME" \
+  TOKEN_SERVICIO="TOKEN_COMPARTIDO" \
+  ADMIN_EMAIL="admin@tu-dominio.com" \
+  ADMIN_CLAVE="CLAVE_ADMIN_SEGURA" \
+  COOKIE_SECURE=true \
+  DIR_DATOS=/tmp/datos \
+  URL_CONCILIADOR="https://nombre-conciliador.herokuapp.com" \
+  --app nombre-pyme
+```
+
+```bash
+heroku config:set SERVICE=banco \
+  CLAVE_SESION="SECRETO_UNICO_BANCO" \
+  TOKEN_SERVICIO="TOKEN_COMPARTIDO" \
+  ADMIN_EMAIL="admin@tu-dominio.com" \
+  ADMIN_CLAVE="CLAVE_ADMIN_SEGURA" \
+  COOKIE_SECURE=true \
+  DIR_DATOS=/tmp/datos \
+  URL_CONCILIADOR="https://nombre-conciliador.herokuapp.com" \
+  --app nombre-banco
+```
+
+```bash
+heroku config:set SERVICE=conciliador \
+  CLAVE_SESION="SECRETO_UNICO_CONCILIADOR" \
+  TOKEN_SERVICIO="TOKEN_COMPARTIDO" \
+  ADMIN_EMAIL="admin@tu-dominio.com" \
+  ADMIN_CLAVE="CLAVE_ADMIN_SEGURA" \
+  COOKIE_SECURE=true \
+  DIR_DATOS=/tmp/datos \
+  URL_PYME="https://nombre-pyme.herokuapp.com" \
+  URL_BANCO="https://nombre-banco.herokuapp.com" \
+  --app nombre-conciliador
+```
+
+`TOKEN_SERVICIO` debe ser idéntico en las tres aplicaciones. `CLAVE_SESION`
+debe ser diferente en cada una. Las URL deben incluir `https://` y no terminar
+en una ruta adicional.
+
+### 4. Proceso de arranque
+
+El `Procfile` usa:
+
+```text
+web: python heroku_start.py
+```
+
+`heroku_start.py`:
+
+1. lee `SERVICE`;
+2. cambia al directorio del servicio correspondiente;
+3. usa `/tmp/datos` como almacenamiento temporal;
+4. crea o actualiza el esquema de base de datos;
+5. crea el administrador inicial si la base está vacía;
+6. sincroniza el Conciliador con PYME y Banco;
+7. inicia Uvicorn en `0.0.0.0:$PORT`.
+
+Desplegar primero PYME y Banco, y después el Conciliador:
+
+```bash
+git push heroku main --app nombre-pyme
+git push heroku main --app nombre-banco
+git push heroku main --app nombre-conciliador
+```
+
+Si se usa despliegue desde GitHub, seleccionar la misma rama en las tres
+aplicaciones y activar el despliegue manual o automático.
+
+### 5. Verificar el despliegue
+
+```bash
+heroku ps --app nombre-pyme
+heroku ps --app nombre-banco
+heroku ps --app nombre-conciliador
+
+heroku logs --tail --app nombre-pyme
+heroku logs --tail --app nombre-banco
+heroku logs --tail --app nombre-conciliador
+```
+
+Después ejecutar las tres llamadas `/interno/salud` descritas arriba y, por
+último, usar **Cadena → Sincronizar** desde el Conciliador.
+
+### Limitación de Heroku
+
+`/tmp/datos` es efímero. Heroku puede eliminarlo al reiniciar o reemplazar el
+dyno, por lo que los archivos generados y recibidos no deben considerarse
+almacenamiento permanente. PostgreSQL conserva la información relacional,
+pero para producción se debe mover el almacenamiento de archivos a S3,
+Cloudinary, Backblaze B2 u otro servicio de objetos persistente.
+
+## Despliegue con Coolify
+
+Crear un único recurso Docker Compose apuntando al repositorio y usar
+`docker-compose.yml`. No usar `docker-compose.local.yml`: Coolify realiza el
+ruteo mediante su proxy.
+
+Configurar los dominios públicos para:
+
+```text
+SERVICE_FQDN_PYME_8001=https://pyme.tudominio.com
+SERVICE_FQDN_BANCO_8002=https://banco.tudominio.com
+SERVICE_FQDN_CONCILIADOR_8000=https://conciliador.tudominio.com
+```
+
+Dentro de Compose, los servicios se conectan por `http://pyme:8001`,
+`http://banco:8002` y `http://conciliador:8000`. No es necesario usar
+dominios públicos para la propagación interna.
 
 ## Pruebas
 
-No necesitan base de datos:
+Las pruebas de sellos y conciliación no necesitan base de datos:
 
+```bash
+for servicio in servicio-pyme servicio-banco servicio-conciliador; do
+  (cd "$servicio" && python -m tests.test_sellos)
+done
+
+(cd servicio-conciliador && python -m tests.test_conciliacion)
 ```
-python -m tests.test_sellos          # calculos de la cadena (los tres)
-python -m tests.test_conciliacion    # motor de conciliacion (conciliador)
-python -m tests.test_arranque        # pantallas y API interna (los tres)
+
+Las pruebas de arranque requieren las dependencias de `requirements.txt`:
+
+```bash
+python -m pip install -r requirements.txt
+
+for servicio in servicio-pyme servicio-banco servicio-conciliador; do
+  (cd "$servicio" && python -m tests.test_arranque)
+done
 ```
 
-## Archivos de ejemplo
+También se puede compilar el código sin iniciar PostgreSQL:
 
-Cada servicio trae una carpeta `ejemplos/` con archivos reales. PYME y Banco
-los importan con `python -m app.importar <archivo>`: es la via de integracion
-con el sistema de origen (no se tipean los movimientos de a uno) y queda
-registrada en la auditoria.
+```bash
+python -m compileall -q heroku_start.py \
+  servicio-pyme/app servicio-banco/app servicio-conciliador/app
+```
 
-El conciliador recibe los archivos **emitidos y sellados** por los otros dos
-servicios; ademas incluye copias modificadas fuera del sistema para mostrar
-la deteccion de alteraciones y el detalle de la diferencia.
+## Estructura principal
 
-## Notas
+```text
+.
+├── Procfile
+├── heroku_start.py
+├── docker-compose.yml
+├── docker-compose.local.yml
+├── infra/postgres/
+├── servicio-pyme/
+├── servicio-banco/
+└── servicio-conciliador/
+```
 
-* El archivo `.env` y la carpeta `datos/` (archivos emitidos) no se
-  versionan.
-* Los archivos se sellan con SHA-256 y la huella queda en la cadena: el
-  sistema no cifra los datos, garantiza que no cambien sin que se note.
+Cada servicio contiene su aplicación FastAPI, migración SQL, Dockerfile,
+ejemplos y pruebas. Los archivos `.env`, secretos y directorios de datos no
+deben subirse al repositorio.
+
+## Seguridad y operación
+
+- No usar los secretos de ejemplo en producción.
+- Mantener el mismo `TOKEN_SERVICIO` únicamente entre las tres aplicaciones.
+- Usar una `CLAVE_SESION` diferente por aplicación.
+- Mantener `COOKIE_SECURE=true` cuando se acceda mediante HTTPS.
+- Revisar **Alertas** y **Auditoría** después de cada sincronización.
+- No borrar una base o volumen sin respaldo.
+- El sistema garantiza integridad mediante hashes, pero no cifra el contenido
+  de los archivos.
+
+Para el procedimiento específico de Heroku también se puede consultar
+[`HEROKU.md`](HEROKU.md).
