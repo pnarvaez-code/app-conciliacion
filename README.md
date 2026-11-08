@@ -293,6 +293,19 @@ otra aplicación: cada servicio necesita su propia base.
 
 ### 3. Configurar variables
 
+En Heroku, la conexión entre las aplicaciones no se configura con
+`localhost`. Para los dominios actuales, usa:
+
+| Aplicación | Variable | Valor |
+|---|---|---|
+| PYME | `URL_CONCILIADOR` | `https://app-conciliacion-caad17bda026.herokuapp.com` |
+| Banco | `URL_CONCILIADOR` | `https://app-conciliacion-caad17bda026.herokuapp.com` |
+| Conciliador | `URL_PYME` | `https://app-pyme-32264247d32e.herokuapp.com` |
+| Conciliador | `URL_BANCO` | `https://app-banco-651db57b86fb.herokuapp.com` |
+
+El valor de `TOKEN_SERVICIO` debe ser idéntico en las tres aplicaciones.
+Después de cambiar Config Vars, reinicia los tres dynos.
+
 Generar secretos:
 
 ```bash
