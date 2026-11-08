@@ -16,12 +16,12 @@ Cada accion relevante queda auditada con el usuario y la IP de origen.
 import os
 
 from fastapi import FastAPI, File, Form, Request, UploadFile
-from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse
+from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
 from app import (alertas, auditoria, cadena, cierre, config, db, importar,
-                 internos, movimientos, reset, seguridad, verificacion)
+                 internos, movimientos, reporte, reset, seguridad, verificacion)
 
 BASE = os.path.dirname(os.path.abspath(__file__))
 app = FastAPI(title="Servicio PYME - sistema de ventas")
@@ -329,6 +329,17 @@ def ver_auditoria(request: Request):
     return plantillas.TemplateResponse(request, "auditoria.html",
                                        _contexto(request, usuario,
                                                  registros=auditoria.listar()))
+
+
+@app.get("/reporte")
+def descargar_reporte(request: Request):
+    usuario = _exigir_usuario(request)
+    auditoria.registrar(usuario["id"], "generar_reporte", "reportes", None,
+                        {"formato": "pdf"}, seguridad.ip_de(request))
+    contenido = reporte.generar(usuario)
+    return Response(
+        content=contenido, media_type="application/pdf",
+        headers={"Content-Disposition": "attachment; filename=reporte-pyme.pdf"})
 
 
 @app.get("/reset", response_class=HTMLResponse)

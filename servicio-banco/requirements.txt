@@ -6,3 +6,4 @@ bcrypt
 itsdangerous
 python-multipart
 httpx
+reportlab

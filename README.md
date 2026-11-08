@@ -204,6 +204,21 @@ En **Conciliación**, ejecutar el proceso para obtener:
 El **Visor** muestra el estado actualizado de la cadena, recepciones,
 conciliación y alertas.
 
+### Reportes PDF
+
+Las tres aplicaciones incluyen el botón **Reporte PDF** en el menú principal.
+La descarga genera un documento profesional con:
+
+- usuario y fecha de generación;
+- resumen de usuarios, operaciones auditadas, alertas y bloques;
+- últimas operaciones registradas en Auditoría;
+- alertas recientes y su severidad;
+- identificación del servicio que emitió el reporte.
+
+La ruta `/reporte` requiere una sesión activa y registra la descarga en
+Auditoría. El PDF se genera en memoria, por lo que no crea archivos
+temporales en Heroku.
+
 ## Verificación de las tres conexiones
 
 La API interna de cada aplicación requiere el mismo `TOKEN_SERVICIO`. Para
