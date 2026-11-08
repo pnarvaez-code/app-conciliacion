@@ -43,6 +43,19 @@ No uses `localhost`, URLs internas de Docker, la URL del panel de Heroku ni
 una URL con una ruta adicional. Deben ser las URLs públicas HTTPS base, por
 ejemplo `https://mi-pyme-1234.herokuapp.com`.
 
+Antes de guardar una URL, verifica que el dominio exista:
+
+```bash
+curl -i https://DOMINIO_CONCILIADOR/interno/salud \
+  -H "X-Servicio-Token: TOKEN_COMPARTIDO"
+```
+
+La URL `https://app-conciliacion-caad17bda026.herokuapp.com/` no debe
+configurarse mientras no responda por DNS. Si `curl` muestra `Could not
+resolve host` o HTTP `404`, copia el dominio actual desde **Heroku →
+Settings → Domains** de la aplicación Conciliador. La barra final no es
+necesaria; el código la elimina automáticamente.
+
 ## 4. Verificar las conexiones entre las tres aplicaciones
 
 Las conexiones deben quedar configuradas en una sola direccion: PYME y Banco
