@@ -14,6 +14,7 @@ API interna para los otros servicios: ver app/internos.py.
 Cada accion relevante queda auditada con el usuario y la IP de origen.
 """
 import os
+from pathlib import Path
 
 from fastapi import FastAPI, File, Form, Request, UploadFile
 from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse, Response
@@ -23,11 +24,11 @@ from fastapi.templating import Jinja2Templates
 from app import (alertas, auditoria, cadena, cierre, config, db, importar,
                  internos, movimientos, reporte, reset, seguridad, verificacion)
 
-BASE = os.path.dirname(os.path.abspath(__file__))
+BASE = Path(__file__).resolve().parent
 app = FastAPI(title="Servicio BANCO - portal de empresas")
-app.mount("/estaticos", StaticFiles(directory=os.path.join(BASE, "estaticos")),
+app.mount("/estaticos", StaticFiles(directory=str(BASE / "estaticos")),
           name="estaticos")
-plantillas = Jinja2Templates(directory=os.path.join(BASE, "plantillas"))
+plantillas = Jinja2Templates(directory=str(BASE / "plantillas"))
 app.include_router(internos.router)
 
 

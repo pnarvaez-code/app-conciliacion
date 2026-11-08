@@ -6,5 +6,8 @@
 --
 -- Cada servicio aplica despues su propio esquema al iniciar.
 
-CREATE DATABASE banco;
-CREATE DATABASE conciliador;
+SELECT 'CREATE DATABASE banco'
+WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'banco')\gexec
+
+SELECT 'CREATE DATABASE conciliador'
+WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'conciliador')\gexec

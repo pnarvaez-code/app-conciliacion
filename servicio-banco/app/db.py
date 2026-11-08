@@ -12,16 +12,23 @@ usuario.
 tabla `usuarios` no existe) y `asegurar_admin` crea el primer usuario a
 partir de las variables de entorno, tambien una sola vez.
 """
-import os
+from pathlib import Path
 
 import psycopg
+from psycopg import sql
 from psycopg.rows import dict_row
 
 from app import config
 
 
 def conectar():
-    return psycopg.connect(config.base_datos(), row_factory=dict_row)
+    conexion = psycopg.connect(config.base_datos(), row_factory=dict_row)
+    with conexion.cursor() as cursor:
+        esquema = sql.Identifier(config.esquema())
+        cursor.execute(sql.SQL("CREATE SCHEMA IF NOT EXISTS {}").format(esquema))
+        cursor.execute(sql.SQL("SET search_path TO {}, public").format(esquema))
+    conexion.commit()
+    return conexion
 
 
 def consultar(sql, parametros=()):
@@ -52,12 +59,12 @@ def aplicar_migracion():
     """Aplica migraciones/001_inicial.sql si la base esta vacia."""
     existe = consultar_uno(
         "SELECT 1 AS hay FROM information_schema.tables "
-        "WHERE table_schema = 'public' AND table_name = 'usuarios'")
+        "WHERE table_schema = %s AND table_name = 'usuarios'",
+        (config.esquema(),))
     if existe:
         return False
-    ruta = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-                       "migraciones", "001_inicial.sql")
-    with open(ruta, encoding="utf-8") as archivo:
+    ruta = Path(__file__).resolve().parent.parent / "migraciones" / "001_inicial.sql"
+    with ruta.open(encoding="utf-8") as archivo:
         sql = archivo.read()
     with conectar() as conexion:
         with conexion.cursor() as cursor:

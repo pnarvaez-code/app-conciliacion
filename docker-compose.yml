@@ -39,6 +39,7 @@ services:
     build: ./servicio-pyme
     environment:
       DATABASE_URL: postgresql://${USUARIO_BASE_DATOS:-conciliacion}:${CLAVE_BASE_DATOS:-conciliacion}@postgres:5432/pyme
+      DB_SCHEMA: ${DB_SCHEMA_PYME:-public}
       CLAVE_SESION: ${CLAVE_SESION_PYME:-sesion-pyme-de-ejemplo}
       TOKEN_SERVICIO: ${TOKEN_SERVICIO:-token-interno-de-ejemplo}
       ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@ejemplo.com}
@@ -53,6 +54,12 @@ services:
     #   - "8001:8001"
     volumes:
       - datos-pyme:/datos
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import os, urllib.request; r=urllib.request.Request('http://127.0.0.1:$${PORT}/interno/salud', headers={'X-Servicio-Token': os.environ['TOKEN_SERVICIO']}); urllib.request.urlopen(r, timeout=3)\""]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 15s
     depends_on:
       postgres:
         condition: service_healthy
@@ -63,6 +70,7 @@ services:
     build: ./servicio-banco
     environment:
       DATABASE_URL: postgresql://${USUARIO_BASE_DATOS:-conciliacion}:${CLAVE_BASE_DATOS:-conciliacion}@postgres:5432/banco
+      DB_SCHEMA: ${DB_SCHEMA_BANCO:-public}
       CLAVE_SESION: ${CLAVE_SESION_BANCO:-sesion-banco-de-ejemplo}
       TOKEN_SERVICIO: ${TOKEN_SERVICIO:-token-interno-de-ejemplo}
       ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@ejemplo.com}
@@ -77,6 +85,12 @@ services:
     #   - "8002:8002"
     volumes:
       - datos-banco:/datos
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import os, urllib.request; r=urllib.request.Request('http://127.0.0.1:$${PORT}/interno/salud', headers={'X-Servicio-Token': os.environ['TOKEN_SERVICIO']}); urllib.request.urlopen(r, timeout=3)\""]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 15s
     depends_on:
       postgres:
         condition: service_healthy
@@ -87,6 +101,7 @@ services:
     build: ./servicio-conciliador
     environment:
       DATABASE_URL: postgresql://${USUARIO_BASE_DATOS:-conciliacion}:${CLAVE_BASE_DATOS:-conciliacion}@postgres:5432/conciliador
+      DB_SCHEMA: ${DB_SCHEMA_CONCILIADOR:-public}
       CLAVE_SESION: ${CLAVE_SESION_CONCILIADOR:-sesion-conciliador-de-ejemplo}
       TOKEN_SERVICIO: ${TOKEN_SERVICIO:-token-interno-de-ejemplo}
       ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@ejemplo.com}
@@ -105,9 +120,15 @@ services:
       postgres:
         condition: service_healthy
       pyme:
-        condition: service_started
+        condition: service_healthy
       banco:
-        condition: service_started
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import os, urllib.request; r=urllib.request.Request('http://127.0.0.1:$${PORT}/interno/salud', headers={'X-Servicio-Token': os.environ['TOKEN_SERVICIO']}); urllib.request.urlopen(r, timeout=3)\""]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 15s
     restart: unless-stopped
 
 volumes:

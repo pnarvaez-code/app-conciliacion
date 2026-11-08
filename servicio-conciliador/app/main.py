@@ -16,6 +16,7 @@ Pantallas (todas requieren sesion, salvo el ingreso):
 API interna para los otros servicios: ver app/internos.py.
 """
 import os
+from pathlib import Path
 
 from fastapi import FastAPI, File, Form, Request, UploadFile
 from fastapi.responses import JSONResponse, RedirectResponse, Response
@@ -26,11 +27,11 @@ from fastapi.templating import Jinja2Templates
 from app import (alertas, auditoria, cadena, conciliacion, config, db, internos,
                  recepciones, reporte, reset)
 
-BASE = os.path.dirname(os.path.abspath(__file__))
+BASE = Path(__file__).resolve().parent
 app = FastAPI(title="Servicio CONCILIADOR - herramienta del auditor")
-app.mount("/estaticos", StaticFiles(directory=os.path.join(BASE, "estaticos")),
+app.mount("/estaticos", StaticFiles(directory=str(BASE / "estaticos")),
           name="estaticos")
-plantillas = Jinja2Templates(directory=os.path.join(BASE, "plantillas"))
+plantillas = Jinja2Templates(directory=str(BASE / "plantillas"))
 app.include_router(internos.router)
 
 from app import seguridad  # se importa despues para evitar ciclos en pruebas

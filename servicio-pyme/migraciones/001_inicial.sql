@@ -7,7 +7,7 @@
 --
 -- Este archivo es el DER en SQL: cada tabla y columna esta comentada.
 
-CREATE TABLE usuarios (
+CREATE TABLE IF NOT EXISTS usuarios (
     id              BIGSERIAL PRIMARY KEY,
     email           TEXT NOT NULL UNIQUE,
     nombre          TEXT NOT NULL,
@@ -18,7 +18,7 @@ CREATE TABLE usuarios (
     updated_at      TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE TABLE sesiones (
+CREATE TABLE IF NOT EXISTS sesiones (
     id              BIGSERIAL PRIMARY KEY,
     usuario_id      BIGINT NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
     token_hash      TEXT NOT NULL UNIQUE,       -- hash del token de la cookie
@@ -29,7 +29,7 @@ CREATE TABLE sesiones (
     updated_at      TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE TABLE archivos (
+CREATE TABLE IF NOT EXISTS archivos (
     id              BIGSERIAL PRIMARY KEY,
     nombre          TEXT NOT NULL,              -- nombre del archivo
     ruta            TEXT NOT NULL,              -- ubicacion en el volumen
@@ -42,7 +42,7 @@ CREATE TABLE archivos (
 );
 
 
-CREATE TABLE lotes (
+CREATE TABLE IF NOT EXISTS lotes (
     id              BIGSERIAL PRIMARY KEY,
     codigo          TEXT NOT NULL UNIQUE,        -- V-... (pyme) / E-... (banco)
     n_movimientos   INTEGER NOT NULL,
@@ -54,7 +54,7 @@ CREATE TABLE lotes (
 );
 
 -- Movimientos: ventas (PYME) o movimientos de la cuenta (Banco).
-CREATE TABLE movimientos (
+CREATE TABLE IF NOT EXISTS movimientos (
     id              BIGSERIAL PRIMARY KEY,
     fecha           DATE NOT NULL,
     monto           BIGINT NOT NULL CHECK (monto > 0),   -- guaranies, entero
@@ -68,12 +68,12 @@ CREATE TABLE movimientos (
     updated_at      TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE INDEX idx_movimientos_fecha ON movimientos (fecha);
-CREATE INDEX idx_movimientos_lote ON movimientos (lote_id);
-CREATE INDEX idx_movimientos_referencia ON movimientos (referencia);
+CREATE INDEX IF NOT EXISTS idx_movimientos_fecha ON movimientos (fecha);
+CREATE INDEX IF NOT EXISTS idx_movimientos_lote ON movimientos (lote_id);
+CREATE INDEX IF NOT EXISTS idx_movimientos_referencia ON movimientos (referencia);
 
 
-CREATE TABLE bloques (
+CREATE TABLE IF NOT EXISTS bloques (
     id                  BIGSERIAL PRIMARY KEY,
     indice              BIGINT NOT NULL UNIQUE,     -- orden en la cadena
     origen              TEXT NOT NULL,              -- PYME | BANCO | CONCILIADOR
@@ -91,7 +91,7 @@ CREATE TABLE bloques (
     updated_at          TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE TABLE bloques_envios (
+CREATE TABLE IF NOT EXISTS bloques_envios (
     id              BIGSERIAL PRIMARY KEY,
     bloque_id       BIGINT NOT NULL REFERENCES bloques(id) ON DELETE CASCADE,
     destino         TEXT NOT NULL,                  -- servicio destino
@@ -104,7 +104,7 @@ CREATE TABLE bloques_envios (
     UNIQUE (bloque_id, destino)
 );
 
-CREATE TABLE alertas (
+CREATE TABLE IF NOT EXISTS alertas (
     id              BIGSERIAL PRIMARY KEY,
     tipo            TEXT NOT NULL CHECK (tipo IN ('integridad','diferencia','operativa')),
     severidad       TEXT NOT NULL CHECK (severidad IN ('alta','media','baja')),
@@ -119,7 +119,7 @@ CREATE TABLE alertas (
 );
 
 -- La auditoria no se actualiza: solo se agregan filas (append-only).
-CREATE TABLE auditoria (
+CREATE TABLE IF NOT EXISTS auditoria (
     id              BIGSERIAL PRIMARY KEY,
     usuario_id      BIGINT REFERENCES usuarios(id),
     accion          TEXT NOT NULL,               -- login, alta_movimiento, sello, carga_archivo...
