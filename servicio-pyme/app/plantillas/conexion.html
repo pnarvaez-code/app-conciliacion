@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block contenido %}
+<h2>Conexión entre aplicaciones</h2>
+<section class="tarjeta">
+  <p>Esta verificación comprueba que el servicio esté activo y que pueda
+  comunicarse con el Conciliador usando la URL y el token configurados.</p>
+  <table>
+    <tr><th>Servicio</th><th>Estado</th><th>Detalle</th><th>Índice</th></tr>
+    {% for resultado in resultados %}
+    <tr>
+      <td>{{ resultado.servicio }}</td>
+      <td class="{{ 'aviso' if resultado.estado == 'conectado' else 'error' }}">
+        {{ resultado.estado|capitalize }}
+      </td>
+      <td>{{ resultado.detalle }}</td>
+      <td>{{ resultado.indice }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+</section>
+{% endblock %}

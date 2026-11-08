@@ -18,6 +18,7 @@ import logging
 import os
 from pathlib import Path
 
+import httpx
 from fastapi import FastAPI, File, Form, Request, UploadFile
 from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
@@ -360,6 +361,44 @@ def ver_auditoria(request: Request):
     return plantillas.TemplateResponse(request, "auditoria.html",
                                        _contexto(request, usuario,
                                                  registros=auditoria.listar()))
+
+
+@app.get("/conexion", response_class=HTMLResponse)
+def ver_conexion(request: Request):
+    usuario = _exigir_usuario(request)
+    resultados = [{"servicio": config.NOMBRE_SERVICIO, "estado": "conectado",
+                   "detalle": "La aplicación está activa y responde correctamente.",
+                   "indice": cadena.ultimo_bloque()["indice"]
+                   if cadena.ultimo_bloque() else 0}]
+    url = config.url_conciliador()
+    if not url:
+        resultados.append({"servicio": "CONCILIADOR", "estado": "error",
+                           "detalle": "Falta configurar URL_CONCILIADOR.",
+                           "indice": "-"})
+    else:
+        try:
+            respuesta = httpx.get(
+                "%s/interno/salud" % url,
+                headers={"X-Servicio-Token": config.token_servicio()},
+                timeout=10)
+            datos = respuesta.json()
+            if respuesta.is_success and datos.get("estado") == "ok":
+                resultados.append({"servicio": "CONCILIADOR",
+                                   "estado": "conectado",
+                                   "detalle": "API interna disponible.",
+                                   "indice": datos.get("ultimo_indice", 0)})
+            else:
+                resultados.append({"servicio": "CONCILIADOR", "estado": "error",
+                                   "detalle": "HTTP %s: %s" %
+                                   (respuesta.status_code, datos.get("detail", "respuesta no válida")),
+                                   "indice": "-"})
+        except Exception as error:
+            resultados.append({"servicio": "CONCILIADOR", "estado": "error",
+                               "detalle": "No se pudo conectar: %s" % str(error)[:180],
+                               "indice": "-"})
+    return plantillas.TemplateResponse(request, "conexion.html",
+                                       _contexto(request, usuario,
+                                                 resultados=resultados))
 
 
 @app.get("/reporte")
