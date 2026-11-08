@@ -39,6 +39,33 @@ Copia las URL HTTPS asignadas por Heroku en las variables de comunicacion:
 
 Usa las URL completas con https://. Puedes verlas en los dominios de cada app aunque todavia no este desplegada.
 
+Para los dominios actuales del proyecto, configura exactamente:
+
+```bash
+# Aplicación PYME
+heroku config:set \
+  SERVICIO=pyme \
+  URL_CONCILIADOR=https://app-conciliacion-caad17bda026.herokuapp.com \
+  --app NOMBRE_APP_PYME
+
+# Aplicación Banco
+heroku config:set \
+  SERVICIO=banco \
+  URL_CONCILIADOR=https://app-conciliacion-caad17bda026.herokuapp.com \
+  --app NOMBRE_APP_BANCO
+
+# Aplicación Conciliador
+heroku config:set \
+  SERVICIO=conciliador \
+  URL_PYME=https://app-pyme-32264247d32e.herokuapp.com \
+  URL_BANCO=https://app-banco-651db57b86fb.herokuapp.com \
+  --app NOMBRE_APP_CONCILIADOR
+```
+
+En las tres aplicaciones, `TOKEN_SERVICIO` debe tener exactamente el mismo
+valor. Después de guardar las variables, ejecuta `heroku restart --app
+NOMBRE_APP` en cada aplicación o realiza un nuevo deploy.
+
 No uses `localhost`, URLs internas de Docker, la URL del panel de Heroku ni
 una URL con una ruta adicional. Deben ser las URLs públicas HTTPS base, por
 ejemplo `https://mi-pyme-1234.herokuapp.com`.
