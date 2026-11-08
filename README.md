@@ -26,7 +26,8 @@ bloques únicamente al Conciliador mediante la API interna protegida por
 `X-Servicio-Token`.
 
 El Conciliador también puede recuperar bloques faltantes consultando a PYME y
-Banco desde **Cadena → Sincronizar**. La validación se realiza por origen:
+Banco desde **Cadena → Sincronizar**. Cada respuesta se valida contra el
+origen esperado y la huella del bloque antes de guardarse:
 
 ```text
 PYME  ──propaga──> Conciliador
@@ -171,7 +172,8 @@ En el Conciliador:
 2. Pulsar **Sincronizar**.
 3. Confirmar que aparecen bloques de origen `PYME` y `BANCO`.
 
-La sincronización consulta a cada origen desde su último índice local. Un
+La sincronización consulta a cada origen desde su último índice local y hace
+hasta tres intentos para tolerar dynos que están despertando en Heroku. Un
 bloque repetido se acepta como ya existente; un conflicto de hash o de
 encadenamiento genera una alerta.
 
@@ -201,6 +203,21 @@ En **Conciliación**, ejecutar el proceso para obtener:
 
 El **Visor** muestra el estado actualizado de la cadena, recepciones,
 conciliación y alertas.
+
+### Reportes PDF
+
+Las tres aplicaciones incluyen el botón **Reporte PDF** en el menú principal.
+La descarga genera un documento profesional con:
+
+- usuario y fecha de generación;
+- resumen de usuarios, operaciones auditadas, alertas y bloques;
+- últimas operaciones registradas en Auditoría;
+- alertas recientes y su severidad;
+- identificación del servicio que emitió el reporte.
+
+La ruta `/reporte` requiere una sesión activa y registra la descarga en
+Auditoría. El PDF se genera en memoria, por lo que no crea archivos
+temporales en Heroku.
 
 ## Verificación de las tres conexiones
 

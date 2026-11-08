@@ -25,7 +25,7 @@ def main():
     assert respuesta.headers["location"] == "/login"
     print("GET / sin sesion -> 303 a /login")
 
-    for ruta in ("/lotes", "/usuarios", "/alertas", "/auditoria"):
+    for ruta in ("/lotes", "/usuarios", "/alertas", "/auditoria", "/reporte"):
         assert cliente.get(ruta).status_code == 303, ruta
     print("Pantallas protegidas: todas redirigen al ingreso")
 

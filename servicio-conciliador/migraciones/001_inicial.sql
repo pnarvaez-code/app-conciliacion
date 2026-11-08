@@ -7,7 +7,7 @@
 --
 -- Este archivo es el DER en SQL: cada tabla y columna esta comentada.
 
-CREATE TABLE usuarios (
+CREATE TABLE IF NOT EXISTS usuarios (
     id              BIGSERIAL PRIMARY KEY,
     email           TEXT NOT NULL UNIQUE,
     nombre          TEXT NOT NULL,
@@ -18,7 +18,7 @@ CREATE TABLE usuarios (
     updated_at      TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE TABLE sesiones (
+CREATE TABLE IF NOT EXISTS sesiones (
     id              BIGSERIAL PRIMARY KEY,
     usuario_id      BIGINT NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
     token_hash      TEXT NOT NULL UNIQUE,       -- hash del token de la cookie
@@ -29,7 +29,7 @@ CREATE TABLE sesiones (
     updated_at      TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE TABLE archivos (
+CREATE TABLE IF NOT EXISTS archivos (
     id              BIGSERIAL PRIMARY KEY,
     nombre          TEXT NOT NULL,              -- nombre del archivo
     ruta            TEXT NOT NULL,              -- ubicacion en el volumen
@@ -45,7 +45,7 @@ CREATE TABLE archivos (
 -- El conciliador no produce movimientos propios: recibe archivos y los
 -- verifica contra los sellos. Estas tablas reflejan ese trabajo.
 
-CREATE TABLE recepciones (
+CREATE TABLE IF NOT EXISTS recepciones (
     id                  BIGSERIAL PRIMARY KEY,
     archivo_id          BIGINT NOT NULL REFERENCES archivos(id),
     origen              TEXT NOT NULL CHECK (origen IN ('EMPRESA','BANCO')),
@@ -59,7 +59,7 @@ CREATE TABLE recepciones (
     updated_at          TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE TABLE conciliaciones (
+CREATE TABLE IF NOT EXISTS conciliaciones (
     id                  BIGSERIAL PRIMARY KEY,
     desde               DATE,
     hasta               DATE,
@@ -73,7 +73,7 @@ CREATE TABLE conciliaciones (
 );
 
 -- Pares conciliados: se guarda la fotografia de ambos movimientos (jsonb).
-CREATE TABLE conciliacion_pares (
+CREATE TABLE IF NOT EXISTS conciliacion_pares (
     id                  BIGSERIAL PRIMARY KEY,
     conciliacion_id     BIGINT NOT NULL REFERENCES conciliaciones(id) ON DELETE CASCADE,
     nivel               INTEGER NOT NULL CHECK (nivel IN (1,2,3)),
@@ -83,7 +83,7 @@ CREATE TABLE conciliacion_pares (
 );
 
 -- Diferencias y pendientes, clasificados por tipo (escenarios del tribunal).
-CREATE TABLE conciliacion_pendientes (
+CREATE TABLE IF NOT EXISTS conciliacion_pendientes (
     id                  BIGSERIAL PRIMARY KEY,
     conciliacion_id     BIGINT NOT NULL REFERENCES conciliaciones(id) ON DELETE CASCADE,
     origen              TEXT NOT NULL CHECK (origen IN ('EMPRESA','BANCO')),
@@ -96,7 +96,7 @@ CREATE TABLE conciliacion_pendientes (
 );
 
 
-CREATE TABLE bloques (
+CREATE TABLE IF NOT EXISTS bloques (
     id                  BIGSERIAL PRIMARY KEY,
     indice              BIGINT NOT NULL,            -- orden dentro del origen
     origen              TEXT NOT NULL,              -- PYME | BANCO | CONCILIADOR
@@ -114,12 +114,13 @@ CREATE TABLE bloques (
     updated_at          TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE UNIQUE INDEX uq_bloques_origen_indice ON bloques (origen, indice);
+CREATE UNIQUE INDEX IF NOT EXISTS uq_bloques_origen_indice
+    ON bloques (origen, indice);
 
 -- El conciliador no propaga bloques (solo los recibe y verifica), asi que no
 -- lleva la tabla de envios que si tienen PYME y Banco.
 
-CREATE TABLE alertas (
+CREATE TABLE IF NOT EXISTS alertas (
     id              BIGSERIAL PRIMARY KEY,
     tipo            TEXT NOT NULL CHECK (tipo IN ('integridad','diferencia','operativa')),
     severidad       TEXT NOT NULL CHECK (severidad IN ('alta','media','baja')),
@@ -134,7 +135,7 @@ CREATE TABLE alertas (
 );
 
 -- La auditoria no se actualiza: solo se agregan filas (append-only).
-CREATE TABLE auditoria (
+CREATE TABLE IF NOT EXISTS auditoria (
     id              BIGSERIAL PRIMARY KEY,
     usuario_id      BIGINT REFERENCES usuarios(id),
     accion          TEXT NOT NULL,               -- login, alta_movimiento, sello, carga_archivo...

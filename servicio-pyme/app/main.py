@@ -14,20 +14,21 @@ API interna para los otros servicios: ver app/internos.py.
 Cada accion relevante queda auditada con el usuario y la IP de origen.
 """
 import os
+from pathlib import Path
 
 from fastapi import FastAPI, File, Form, Request, UploadFile
-from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse
+from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
 from app import (alertas, auditoria, cadena, cierre, config, db, importar,
-                 internos, movimientos, reset, seguridad, verificacion)
+                 internos, movimientos, reporte, reset, seguridad, verificacion)
 
-BASE = os.path.dirname(os.path.abspath(__file__))
+BASE = Path(__file__).resolve().parent
 app = FastAPI(title="Servicio PYME - sistema de ventas")
-app.mount("/estaticos", StaticFiles(directory=os.path.join(BASE, "estaticos")),
+app.mount("/estaticos", StaticFiles(directory=str(BASE / "estaticos")),
           name="estaticos")
-plantillas = Jinja2Templates(directory=os.path.join(BASE, "plantillas"))
+plantillas = Jinja2Templates(directory=str(BASE / "plantillas"))
 app.include_router(internos.router)
 
 
@@ -329,6 +330,17 @@ def ver_auditoria(request: Request):
     return plantillas.TemplateResponse(request, "auditoria.html",
                                        _contexto(request, usuario,
                                                  registros=auditoria.listar()))
+
+
+@app.get("/reporte")
+def descargar_reporte(request: Request):
+    usuario = _exigir_usuario(request)
+    auditoria.registrar(usuario["id"], "generar_reporte", "reportes", None,
+                        {"formato": "pdf"}, seguridad.ip_de(request))
+    contenido = reporte.generar(usuario)
+    return Response(
+        content=contenido, media_type="application/pdf",
+        headers={"Content-Disposition": "attachment; filename=reporte-pyme.pdf"})
 
 
 @app.get("/reset", response_class=HTMLResponse)

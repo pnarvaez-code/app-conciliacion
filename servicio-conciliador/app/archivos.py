@@ -10,7 +10,7 @@ La huella se calcula sobre el contenido exacto que llega: si el archivo
 fue tocado en el camino, no coincidira con el sello del emisor.
 """
 import datetime
-import os
+from pathlib import Path
 
 from app import config, db
 from app.nucleo import sellos
@@ -18,21 +18,21 @@ from app.nucleo import sellos
 
 def guardar(nombre, contenido, usuario_id):
     """Guarda el archivo recibido y registra su fila. Devuelve la fila."""
-    carpeta = os.path.join(config.dir_datos(), "archivos")
-    os.makedirs(carpeta, exist_ok=True)
+    carpeta = Path(config.dir_datos()) / "archivos"
+    carpeta.mkdir(parents=True, exist_ok=True)
     marca = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
-    ruta = os.path.join(carpeta, "%s_%s" % (marca, nombre))
+    ruta = carpeta / ("%s_%s" % (marca, nombre))
     datos = contenido if isinstance(contenido, bytes) else contenido.encode("utf-8")
-    with open(ruta, "wb") as archivo:
+    with ruta.open("wb") as archivo:
         archivo.write(datos)
     return db.ejecutar(
         "INSERT INTO archivos (nombre, ruta, sha256, bytes, origen, subido_por)"
         " VALUES (%s, %s, %s, %s, 'recibido', %s) RETURNING *",
-        (nombre, ruta, sellos.huella_archivo(datos), len(datos), usuario_id))
+        (nombre, str(ruta), sellos.huella_archivo(datos), len(datos), usuario_id))
 
 
 def leer(ruta):
     """Contenido del archivo guardado, como texto."""
-    with open(ruta, "rb") as archivo:
+    with Path(ruta).open("rb") as archivo:
         datos = archivo.read()
     return datos.decode("utf-8", errors="replace")

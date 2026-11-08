@@ -16,21 +16,22 @@ Pantallas (todas requieren sesion, salvo el ingreso):
 API interna para los otros servicios: ver app/internos.py.
 """
 import os
+from pathlib import Path
 
 from fastapi import FastAPI, File, Form, Request, UploadFile
-from fastapi.responses import JSONResponse, RedirectResponse
+from fastapi.responses import JSONResponse, RedirectResponse, Response
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
 from app import (alertas, auditoria, cadena, conciliacion, config, db, internos,
-                 recepciones, reset)
+                 recepciones, reporte, reset)
 
-BASE = os.path.dirname(os.path.abspath(__file__))
+BASE = Path(__file__).resolve().parent
 app = FastAPI(title="Servicio CONCILIADOR - herramienta del auditor")
-app.mount("/estaticos", StaticFiles(directory=os.path.join(BASE, "estaticos")),
+app.mount("/estaticos", StaticFiles(directory=str(BASE / "estaticos")),
           name="estaticos")
-plantillas = Jinja2Templates(directory=os.path.join(BASE, "plantillas"))
+plantillas = Jinja2Templates(directory=str(BASE / "plantillas"))
 app.include_router(internos.router)
 
 from app import seguridad  # se importa despues para evitar ciclos en pruebas
@@ -293,6 +294,17 @@ def ver_auditoria(request: Request):
     return plantillas.TemplateResponse(request, "auditoria.html",
                                        _contexto(request, usuario,
                                                  registros=auditoria.listar()))
+
+
+@app.get("/reporte")
+def descargar_reporte(request: Request):
+    usuario = _exigir_usuario(request)
+    auditoria.registrar(usuario["id"], "generar_reporte", "reportes", None,
+                        {"formato": "pdf"}, seguridad.ip_de(request))
+    contenido = reporte.generar(usuario)
+    return Response(
+        content=contenido, media_type="application/pdf",
+        headers={"Content-Disposition": "attachment; filename=reporte-conciliador.pdf"})
 
 
 @app.get("/reset", response_class=HTMLResponse)

@@ -8,6 +8,7 @@ Todas las claves se leen al usarse, no al importar: asi el proyecto puede
 importarse sin base ni entorno configurado (pruebas de arranque).
 """
 import os
+import re
 
 NOMBRE_SERVICIO = "PYME"
 ETIQUETA_SERVICIO = "PYME"          # como figura en los bloques de la cadena
@@ -15,7 +16,17 @@ ETIQUETA_SERVICIO = "PYME"          # como figura en los bloques de la cadena
 
 def base_datos():
     """Cadena de conexion a PostgreSQL (base propia de este servicio)."""
-    return _obligatoria("DATABASE_URL")
+    url = _obligatoria("DATABASE_URL")
+    return ("postgresql://" + url[len("postgres://"):]
+            if url.startswith("postgres://") else url)
+
+
+def esquema():
+    """Esquema PostgreSQL aislado para este servicio."""
+    valor = os.environ.get("DB_SCHEMA", "public").strip() or "public"
+    if not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", valor):
+        raise RuntimeError("DB_SCHEMA contiene un nombre invalido")
+    return valor
 
 
 def clave_sesion():
