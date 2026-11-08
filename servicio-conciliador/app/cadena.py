@@ -29,7 +29,7 @@ def ultimo_bloque(origen=None):
     return db.consultar_uno("SELECT * FROM bloques ORDER BY indice DESC LIMIT 1")
 
 
-def registrar_bloque_recibido(bloque_recibido):
+def registrar_bloque_recibido(bloque_recibido, origen_esperado=None):
     """Guarda un bloque que llego de otro servicio, validando el encadenamiento.
 
     Si el mismo indice ya existe con otra huella, se registra una alerta de
@@ -38,6 +38,10 @@ def registrar_bloque_recibido(bloque_recibido):
     origen = bloque_recibido["origen"]
     if origen not in ("PYME", "BANCO"):
         return {"aceptado": False, "motivo": "origen de bloque no permitido"}
+    if origen_esperado and origen != origen_esperado:
+        return {"aceptado": False, "motivo": "origen no coincide con el par"}
+    if sellos.huella_bloque(bloque_recibido) != bloque_recibido["hash_bloque"]:
+        return {"aceptado": False, "motivo": "huella del bloque invalida"}
 
     existente = db.consultar_uno(
         "SELECT hash_bloque FROM bloques WHERE origen = %s AND indice = %s",
@@ -87,7 +91,8 @@ def sincronizar_con_pares():
             respuesta.raise_for_status()
             aceptados = 0
             for bloque in respuesta.json():
-                if registrar_bloque_recibido(bloque).get("aceptado"):
+                if registrar_bloque_recibido(
+                        bloque, origen_esperado=origen).get("aceptado"):
                     aceptados += 1
             resultado.append({"par": nombre, "nuevos": aceptados})
         except Exception as excepcion:

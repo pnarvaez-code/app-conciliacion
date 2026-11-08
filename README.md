@@ -26,7 +26,8 @@ bloques únicamente al Conciliador mediante la API interna protegida por
 `X-Servicio-Token`.
 
 El Conciliador también puede recuperar bloques faltantes consultando a PYME y
-Banco desde **Cadena → Sincronizar**. La validación se realiza por origen:
+Banco desde **Cadena → Sincronizar**. Cada respuesta se valida contra el
+origen esperado y la huella del bloque antes de guardarse:
 
 ```text
 PYME  ──propaga──> Conciliador
