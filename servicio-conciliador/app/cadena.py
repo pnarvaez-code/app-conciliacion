@@ -12,6 +12,8 @@ Al arrancar (y a pedido) sincroniza los bloques faltantes de cada par:
 pide los bloques posteriores a su ultimo indice y los valida antes de
 guardarlos, igual que en una red permisionada.
 """
+import time
+
 import httpx
 
 from app import alertas, config, db
@@ -81,22 +83,35 @@ def sincronizar_con_pares():
     """Pide a cada emisor los bloques posteriores a su ultimo indice local."""
     resultado = []
     for nombre, url in config.pares():
-        try:
-            origen = config.etiqueta_de_origen(nombre)
-            ultimo = ultimo_bloque(origen)
-            desde = ultimo["indice"] if ultimo else 0
-            respuesta = httpx.get(
-                "%s/interno/bloques/desde/%d" % (url, desde),
-                headers={"X-Servicio-Token": config.token_servicio()}, timeout=10)
-            respuesta.raise_for_status()
-            aceptados = 0
-            for bloque in respuesta.json():
-                if registrar_bloque_recibido(
-                        bloque, origen_esperado=origen).get("aceptado"):
-                    aceptados += 1
-            resultado.append({"par": nombre, "nuevos": aceptados})
-        except Exception as excepcion:
-            resultado.append({"par": nombre, "error": str(excepcion)[:200]})
+        origen = config.etiqueta_de_origen(nombre)
+        ultimo = ultimo_bloque(origen)
+        desde = ultimo["indice"] if ultimo else 0
+        ultimo_error = None
+        for intento in range(1, 4):
+            try:
+                respuesta = httpx.get(
+                    "%s/interno/bloques/desde/%d" % (url, desde),
+                    headers={"X-Servicio-Token": config.token_servicio()},
+                    timeout=10)
+                respuesta.raise_for_status()
+                bloques = respuesta.json()
+                if not isinstance(bloques, list):
+                    raise ValueError("respuesta de bloques no es una lista")
+                aceptados = sum(
+                    registrar_bloque_recibido(
+                        bloque, origen_esperado=origen).get("aceptado")
+                    for bloque in bloques)
+                resultado.append({"par": nombre, "nuevos": aceptados,
+                                  "recibidos": len(bloques),
+                                  "intentos": intento})
+                break
+            except Exception as excepcion:
+                ultimo_error = str(excepcion)[:200]
+                if intento < 3:
+                    time.sleep(intento)
+        else:
+            resultado.append({"par": nombre, "error": ultimo_error,
+                              "intentos": 3})
     return resultado
 
 

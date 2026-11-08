@@ -172,7 +172,8 @@ En el Conciliador:
 2. Pulsar **Sincronizar**.
 3. Confirmar que aparecen bloques de origen `PYME` y `BANCO`.
 
-La sincronización consulta a cada origen desde su último índice local. Un
+La sincronización consulta a cada origen desde su último índice local y hace
+hasta tres intentos para tolerar dynos que están despertando en Heroku. Un
 bloque repetido se acepta como ya existente; un conflicto de hash o de
 encadenamiento genera una alerta.
 

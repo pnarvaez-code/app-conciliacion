@@ -32,8 +32,8 @@ Copia las URL HTTPS asignadas por Heroku en las variables de comunicacion:
 
 | Aplicacion | Variables que debe tener |
 |---|---|
-| PYME | URL_BANCO = URL del banco; URL_CONCILIADOR = URL del conciliador |
-| Banco | URL_PYME = URL de PYME; URL_CONCILIADOR = URL del conciliador |
+| PYME | URL_CONCILIADOR = URL del conciliador |
+| Banco | URL_CONCILIADOR = URL del conciliador |
 | Conciliador | URL_PYME = URL de PYME; URL_BANCO = URL del banco |
 
 Usa las URL completas con https://. Puedes verlas en los dominios de cada app aunque todavia no este desplegada.
@@ -59,7 +59,7 @@ Conciliador antes de probar **Cadena → Sincronizar** en el Conciliador.
 
 Despliega primero PYME y banco; luego el conciliador. En cada app, usa Deploy Branch o habilita despliegues automaticos desde GitHub. Al iniciar, el proceso selecciona el servicio indicado por SERVICE, aplica la migracion inicial si la base esta vacia, crea el administrador inicial y arranca Uvicorn usando el puerto PORT asignado por Heroku.
 
-Tras desplegar los tres, entra al conciliador e inicia la sincronizacion de la cadena desde Cadena → Sincronizar. Inicia sesion en cada servicio con ADMIN_EMAIL y ADMIN_CLAVE configurados en Heroku.
+Tras desplegar los tres, entra al conciliador e inicia la sincronizacion de la cadena desde Cadena → Sincronizar. El arranque realiza hasta tres intentos por cada origen para tolerar el despertar tardio de dynos en Heroku. Si un origen no responde, revisa los logs y vuelve a usar **Cadena → Sincronizar** después de confirmar las URLs y el token. Inicia sesion en cada servicio con ADMIN_EMAIL y ADMIN_CLAVE configurados en Heroku.
 
 ## Limite de almacenamiento
 
