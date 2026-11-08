@@ -20,6 +20,7 @@ import logging
 import os
 from pathlib import Path
 
+import httpx
 from fastapi import FastAPI, File, Form, Request, UploadFile
 from fastapi.responses import JSONResponse, RedirectResponse, Response
 from fastapi.responses import HTMLResponse
@@ -201,6 +202,45 @@ def ver_cadena(request: Request):
     return plantillas.TemplateResponse(request, "cadena.html", _contexto(
         request, usuario, bloques=cadena.bloques_completos(),
         problemas_cadena=cadena.verificar_cadena_local()))
+
+
+@app.get("/conexion", response_class=HTMLResponse)
+def ver_conexion(request: Request):
+    usuario = _exigir_usuario(request)
+    resultados = [{"servicio": config.NOMBRE_SERVICIO,
+                   "estado": "conectado" if not cadena.verificar_cadena_local()
+                   else "advertencia",
+                   "detalle": "La copia local de la cadena está verificada."
+                   if not cadena.verificar_cadena_local()
+                   else "La copia local tiene problemas de integridad.",
+                   "indice": len(cadena.bloques_completos(limite=100000))}]
+    for nombre, url in config.pares():
+        servicio = "PYME" if nombre == "pyme" else "BANCO"
+        resultado = {"servicio": servicio, "estado": "error",
+                     "detalle": "No se pudo conectar.", "indice": "-"}
+        if not url:
+            resultado["detalle"] = "Falta configurar la URL pública del servicio."
+        else:
+            try:
+                respuesta = httpx.get(
+                    "%s/interno/salud" % url,
+                    headers={"X-Servicio-Token": config.token_servicio()},
+                    timeout=10)
+                datos = respuesta.json()
+                if respuesta.is_success and datos.get("estado") == "ok":
+                    resultado.update(estado="conectado",
+                                     detalle="API interna disponible.",
+                                     indice=datos.get("ultimo_indice", 0))
+                else:
+                    resultado["detalle"] = "HTTP %s: %s" % (
+                        respuesta.status_code,
+                        datos.get("detail", "respuesta no válida"))
+            except Exception as error:
+                resultado["detalle"] = "No se pudo conectar: %s" % str(error)[:180]
+        resultados.append(resultado)
+    return plantillas.TemplateResponse(request, "conexion.html",
+                                       _contexto(request, usuario,
+                                                 resultados=resultados))
 
 
 @app.post("/cadena/sincronizar")

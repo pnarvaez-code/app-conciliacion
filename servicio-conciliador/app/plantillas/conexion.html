@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block contenido %}
+<h2>Conexión de las tres aplicaciones</h2>
+<section class="tarjeta">
+  <p>La verificación consulta la API interna de PYME y Banco, valida el
+  token compartido y muestra el último índice conocido de cada cadena.</p>
+  <table>
+    <tr><th>Servicio</th><th>Estado</th><th>Detalle</th><th>Índice</th></tr>
+    {% for resultado in resultados %}
+    <tr>
+      <td>{{ resultado.servicio }}</td>
+      <td class="{{ 'aviso' if resultado.estado == 'conectado' else 'error' }}">
+        {{ resultado.estado|capitalize }}
+      </td>
+      <td>{{ resultado.detalle }}</td>
+      <td>{{ resultado.indice }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+</section>
+{% endblock %}
