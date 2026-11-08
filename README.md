@@ -1,5 +1,13 @@
 # Plataforma de conciliación con integridad verificable
 
+## Documentación de la tesis
+
+La memoria académica del proyecto está disponible en
+[`docs/TCC.md`](docs/TCC.md). Incluye portada institucional, resumen,
+abstract, problema, objetivos, marco teórico, metodología, arquitectura de
+los tres servicios, seguridad, reportes PDF, validación, conclusiones,
+referencias y anexos de despliegue.
+
 Aplicación compuesta por tres servicios FastAPI que trabajan como una
 plataforma de conciliación:
 
