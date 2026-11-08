@@ -66,6 +66,23 @@ def aplicar_migracion():
     return True
 
 
+def asegurar_esquema():
+    """Ajusta bases creadas con la migracion anterior de bloques."""
+    existe = consultar_uno(
+        "SELECT 1 AS hay FROM information_schema.tables "
+        "WHERE table_schema = 'public' AND table_name = 'bloques'")
+    if not existe:
+        return
+    with conectar() as conexion:
+        with conexion.cursor() as cursor:
+            cursor.execute(
+                "ALTER TABLE bloques DROP CONSTRAINT IF EXISTS bloques_indice_key")
+            cursor.execute(
+                "CREATE UNIQUE INDEX IF NOT EXISTS "
+                "uq_bloques_origen_indice ON bloques (origen, indice)")
+        conexion.commit()
+
+
 def asegurar_admin():
     """Crea el primer usuario (administrador operador) si no hay ninguno."""
     hay = consultar_uno("SELECT COUNT(*) AS total FROM usuarios")

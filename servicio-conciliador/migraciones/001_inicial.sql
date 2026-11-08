@@ -98,7 +98,7 @@ CREATE TABLE conciliacion_pendientes (
 
 CREATE TABLE bloques (
     id                  BIGSERIAL PRIMARY KEY,
-    indice              BIGINT NOT NULL UNIQUE,     -- orden en la cadena
+    indice              BIGINT NOT NULL,            -- orden dentro del origen
     origen              TEXT NOT NULL,              -- PYME | BANCO | CONCILIADOR
     lote_codigo         TEXT NOT NULL,
     archivo             TEXT NOT NULL,
@@ -113,6 +113,8 @@ CREATE TABLE bloques (
     created_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at          TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+CREATE UNIQUE INDEX uq_bloques_origen_indice ON bloques (origen, indice);
 
 -- El conciliador no propaga bloques (solo los recibe y verifica), asi que no
 -- lleva la tabla de envios que si tienen PYME y Banco.

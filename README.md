@@ -6,8 +6,9 @@ verifica los sellos y concilia.
 
 Cada servicio es una aplicacion FastAPI con su propia base PostgreSQL, su
 propio ingreso con sesion, su auditoria y una copia de la cadena de bloques.
-Los bloques se propagan entre servicios por una API interna protegida con
-un token compartido.
+PYME y Banco mantienen cadenas independientes y solo propagan sus bloques al
+Conciliador por una API interna protegida con un token compartido. El
+Conciliador sincroniza y verifica cada origen por separado.
 
 | Carpeta | Puerto | Rol |
 |---|---|---|

@@ -49,9 +49,9 @@ def url_conciliador():
 
 
 def pares():
-    """Destinos de propagacion: nombre interno y URL."""
-    return [(nombre, url) for nombre, url in
-            (("pyme", url_pyme()), ("conciliador", url_conciliador())) if url]
+    """Destino de propagacion: el conciliador recibe la cadena del banco."""
+    url = url_conciliador()
+    return [("conciliador", url)] if url else []
 
 
 def dir_datos():
