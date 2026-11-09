@@ -41,9 +41,12 @@ def recibir(origen, nombre, contenido, usuario_id, ip=None):
                          "lote": lote_codigo}, ip)
     if estado == "alterado":
         alertas.crear("integridad", "alta",
-                      "Archivo %s de %s no coincide con su sello"
+                      "Archivo modificado: %s de %s"
                       % (nombre, origen),
-                      detalle, referencia=lote_codigo or nombre,
+                      "%s Archivo=%s; SHA-256 recibido=%s; ruta=%s; lote=%s"
+                      % (detalle, nombre, archivo["sha256"], archivo["ruta"],
+                         lote_codigo or "no identificado"),
+                      referencia=lote_codigo or nombre,
                       usuario_id=usuario_id)
     elif estado == "sin_sello":
         alertas.crear("integridad", "media",

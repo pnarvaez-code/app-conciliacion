@@ -38,9 +38,12 @@ def verificar_lotes_propios():
         if not archivo or not os.path.isfile(archivo["ruta"]):
             estado = "sin_archivo"
             detalle.append("el archivo emitido no esta en el volumen")
+            sha256_actual = None
         else:
             with open(archivo["ruta"], "rb") as guardado:
-                problema = sellos.verificar_archivo(bloque, guardado.read())
+                contenido = guardado.read()
+            sha256_actual = sellos.huella_archivo(contenido)
+            problema = sellos.verificar_archivo(bloque, contenido)
             if problema:
                 detalle.append(problema)
             estado = "alterado" if detalle else "intacto"
@@ -58,6 +61,9 @@ def verificar_lotes_propios():
                 estado = "alterado"
 
         resultados.append({"lote": lote_codigo, "archivo": bloque["archivo"],
+                           "ruta": archivo["ruta"] if archivo else None,
+                           "sha256_esperado": bloque["hash_archivo"],
+                           "sha256_actual": sha256_actual,
                            "movimientos": bloque["n_movimientos"],
                            "sellado_en": bloque["sellado_en"],
                            "estado": estado, "detalle": detalle})
@@ -69,9 +75,15 @@ def verificar_y_alertar(usuario_id, ip=None):
     resultados = verificar_lotes_propios()
     alterados = [r for r in resultados if r["estado"] != "intacto"]
     for resultado in alterados:
+        detalle = "; ".join(resultado["detalle"]) or "sin detalle"
+        detalle += "; archivo=%s; ruta=%s; SHA-256 esperado=%s; SHA-256 actual=%s" % (
+            resultado["archivo"], resultado["ruta"] or "no disponible",
+            resultado["sha256_esperado"],
+            resultado["sha256_actual"] or "no disponible")
         alertas.crear("integridad", "alta",
-                      "Lote %s no coincide con su sello" % resultado["lote"],
-                      "; ".join(resultado["detalle"]) or "sin detalle",
+                      "Archivo modificado: %s (lote %s)"
+                      % (resultado["archivo"], resultado["lote"]),
+                      detalle,
                       referencia=resultado["lote"], usuario_id=usuario_id)
     auditoria.registrar(usuario_id, "verificar_lotes", "bloques", None,
                         {"lotes": len(resultados), "alterados": len(alterados)},
