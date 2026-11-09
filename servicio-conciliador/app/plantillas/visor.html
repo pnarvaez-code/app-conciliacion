@@ -6,28 +6,105 @@
 <title>{{ servicio }} - visor en vivo</title>
 <link rel="stylesheet" href="/estaticos/estilos.css">
 <style>
+  .visor-shell { min-height: 100vh; background: #f5f7fb; }
+  .visor-topbar { height: 72px; background: #fff; border-bottom: 1px solid #e8ecf3;
+                  display: flex; align-items: center; padding: 0 28px; gap: 28px; }
+  .visor-brand { display: flex; align-items: center; gap: 10px; min-width: 220px;
+                 color: #172b4d; font-size: 18px; font-weight: 700; }
+  .visor-brand-mark { width: 34px; height: 34px; border-radius: 10px;
+                      display: grid; place-items: center; color: #fff;
+                      background: linear-gradient(135deg, #5b4bdb, #8b5cf6);
+                      font-weight: 800; }
+  .visor-toplinks { display: flex; gap: 28px; align-items: center; flex: 1; }
+  .visor-toplinks a { color: #68758a; text-decoration: none; font-size: 14px; }
+  .visor-toplinks a:hover { color: #5b4bdb; }
+  .visor-user { color: #68758a; font-size: 13px; }
+  .visor-main { display: flex; }
+  .visor-sidebar { width: 225px; flex: 0 0 225px; background: #263da8; color: #dce4ff;
+                   padding: 24px 14px; min-height: calc(100vh - 72px); }
+  .visor-sidebar-label { padding: 0 14px 10px; text-transform: uppercase;
+                         font-size: 10px; letter-spacing: .12em; opacity: .7; }
+  .visor-nav { display: grid; gap: 5px; }
+  .visor-nav a { color: #dce4ff; text-decoration: none; border-radius: 8px;
+                 padding: 11px 14px; font-size: 13px; }
+  .visor-nav a:hover, .visor-nav a.activo { background: rgba(255,255,255,.16); color: #fff; }
+  .visor-content { flex: 1; min-width: 0; padding: 28px 32px 42px; }
+  .visor-heading { display: flex; align-items: flex-start; justify-content: space-between;
+                   gap: 20px; margin-bottom: 22px; }
+  .visor-heading h2 { margin: 0 0 6px; font-size: 24px; color: #172b4d; }
+  .visor-heading p { margin: 0; }
+  .visor-live { display: inline-flex; align-items: center; gap: 7px; color: #0b8b68;
+                background: #e8faf4; border-radius: 999px; padding: 7px 12px;
+                font-size: 12px; font-weight: 700; }
+  .visor-live .vivo { margin: 0; }
+  .visor-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px;
+                margin-bottom: 20px; }
+  .visor-kpi { border-radius: 10px; color: #fff; padding: 18px; min-height: 112px;
+               box-shadow: 0 5px 15px rgba(32, 54, 120, .08); }
+  .visor-kpi.blue { background: #3156d3; } .visor-kpi.gold { background: #f0a900; }
+  .visor-kpi.green { background: #0ca678; } .visor-kpi.red { background: #e53b35; }
+  .visor-kpi strong { display: block; font-size: 28px; margin: 8px 0 4px; }
+  .visor-kpi span { font-size: 12px; opacity: .9; }
+  .visor-kpi small { display: block; margin-top: 10px; opacity: .85; }
+  .visor-panels { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(300px, .7fr);
+                  gap: 20px; align-items: start; }
+  .visor-card { background: #fff; border: 1px solid #e8ecf3; border-radius: 10px;
+                padding: 18px; box-shadow: 0 4px 14px rgba(32, 54, 120, .04); }
+  .visor-card h3 { color: #172b4d; margin-bottom: 14px; }
+  .visor-card table { font-size: 13px; }
   .bloques-vivo { display: flex; gap: 8px; flex-wrap: wrap; }
-  .bloque-vivo { border: 1px solid #bfdfd6; background: #f2faf7; border-radius: 10px;
+  .bloque-vivo { border: 1px solid #dfe5ff; background: #f5f7ff; border-radius: 8px;
                  padding: 8px 12px; min-width: 130px; font-size: 13px; }
-  .bloque-vivo small { display: block; color: #5b6b7a; }
-  .vivo { display: inline-block; width: 9px; height: 9px; border-radius: 50%;
-          background: #2fbf9f; margin-right: 6px; }
+  .bloque-vivo small { display: block; color: #68758a; }
+  .vivo { display: inline-block; width: 8px; height: 8px; border-radius: 50%;
+          background: #20c997; margin-right: 6px; }
+  @media (max-width: 1000px) {
+    .visor-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .visor-panels { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 700px) {
+    .visor-topbar { padding: 0 16px; height: auto; min-height: 64px; }
+    .visor-toplinks { display: none; }
+    .visor-sidebar { width: 58px; flex-basis: 58px; padding: 18px 7px; }
+    .visor-sidebar-label, .visor-nav a span { display: none; }
+    .visor-nav a { text-align: center; padding: 11px 4px; }
+    .visor-content { padding: 20px 14px 32px; }
+    .visor-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
+    .visor-kpi { padding: 13px; }
+  }
 </style>
 </head>
 <body>
-<nav class="barra">
-  <b>{{ servicio }}</b>
-  <a href="/">Panel</a><a href="/recepciones">Recepciones</a>
-  <a href="/conciliacion">Conciliacion</a><a href="/cadena">Cadena</a>
-  <a href="/visor">Visor</a><a href="/usuarios">Usuarios</a>
-  <a href="/alertas">Alertas</a><a href="/auditoria">Auditoria</a>
-  <a class="boton-reporte" href="/reporte">Reporte PDF</a>
-  <span class="salir"><a href="/salir">Salir ({{ usuario.email }})</a></span>
-</nav>
-<main>
-<h2><span class="vivo"></span>Visor en vivo</h2>
-<p class="tenue">Se actualiza solo cada 3 segundos: cadena, recepciones,
-conciliacion y alertas.</p>
+<div class="visor-shell">
+<header class="visor-topbar">
+  <div class="visor-brand"><span class="visor-brand-mark">S</span>{{ servicio }}</div>
+  <nav class="visor-toplinks">
+    <a href="/conciliacion">Conciliacion</a><a href="/recepciones">Recepciones</a>
+    <a href="/cadena">Cadena</a><a href="/alertas">Alertas</a>
+    <a href="/reporte">Reporte PDF</a>
+  </nav>
+  <a class="visor-user" href="/salir">Salir ({{ usuario.email }})</a>
+</header>
+<div class="visor-main">
+<aside class="visor-sidebar">
+  <div class="visor-sidebar-label">Navegación</div>
+  <nav class="visor-nav">
+    <a href="/"><span>⌂ </span>Panel</a>
+    <a href="/visor" class="activo"><span>◉ </span>Visor en vivo</a>
+    <a href="/recepciones"><span>↥ </span>Recepciones</a>
+    <a href="/conciliacion"><span>⇄ </span>Conciliacion</a>
+    <a href="/cadena"><span>◈ </span>Cadena</a>
+    <a href="/alertas"><span>! </span>Alertas</a>
+    <a href="/auditoria"><span>▤ </span>Auditoria</a>
+  </nav>
+</aside>
+<main class="visor-content">
+<div class="visor-heading">
+  <div><h2>Visor en vivo</h2>
+    <p class="tenue">Monitoreo de cargas, integridad y conciliación en tiempo real.</p>
+  </div>
+  <div class="visor-live"><span class="vivo"></span>Actualización automática</div>
+</div>
 
 <section class="tarjeta">
   <h3>Estado de carga de datos</h3>
@@ -38,14 +115,23 @@ conciliacion y alertas.</p>
   <p id="avance-texto" class="tenue"></p>
 </section>
 
-<section class="tarjeta"><h3>Cadena (ultimos bloques)</h3>
+<div class="visor-grid">
+  <div class="visor-kpi blue"><span>Cadena sincronizada</span><strong id="kpi-bloques">0</strong><small>bloques recibidos</small></div>
+  <div class="visor-kpi gold"><span>Movimientos procesados</span><strong id="kpi-movimientos">0</strong><small>desde los lotes</small></div>
+  <div class="visor-kpi green"><span>Pares cruzados</span><strong id="kpi-pares">0</strong><small>conciliación automática</small></div>
+  <div class="visor-kpi red"><span>Diferencias</span><strong id="kpi-diferencias">0</strong><small>alertas a revisar</small></div>
+</div>
+
+<div class="visor-panels">
+<div>
+<section class="visor-card"><h3>Cadena (últimos bloques)</h3>
   <div id="cadena" class="bloques-vivo"></div>
   <p id="cadena-aviso" class="tenue"></p>
 </section>
-<section class="tarjeta"><h3>Recepciones recientes</h3>
+<section class="visor-card"><h3>Recepciones recientes</h3>
 <table><tbody id="recepciones"></tbody></table>
 </section>
-<section class="tarjeta">
+<section class="visor-card">
 <h3>Errores de carga</h3>
 <table>
   <thead><tr><th>Origen</th><th>Archivo / ruta</th><th>Estado</th>
@@ -53,17 +139,31 @@ conciliacion y alertas.</p>
   <tbody id="errores-carga"></tbody>
 </table>
 </section>
-<section class="tarjeta">
+<section class="visor-card">
   <h3>Conciliacion</h3>
   <div id="conciliacion"></div>
   <div id="diferencias-vis" class="visor-diferencias"></div>
 </section>
+</div>
+<div>
+<section class="visor-card">
+  <h3>Resumen de avance</h3>
+  <div id="resumen-bootstrap" class="tenue"></div>
+</section>
+</div>
+</div>
 </main>
+</div>
+</div>
 <script>
 "use strict";
 function pintar(datos) {
   var estadisticas = document.getElementById("estadisticas");
   var s = datos.estadisticas || {};
+  document.getElementById("kpi-bloques").textContent = datos.cadena.length;
+  document.getElementById("kpi-movimientos").textContent = s.movimientos_cadena || 0;
+  document.getElementById("kpi-pares").textContent = s.pares || 0;
+  document.getElementById("kpi-diferencias").textContent = s.diferencias || 0;
   estadisticas.innerHTML = "";
   [
     ["Cargas recibidas", s.cargas || 0, "total"],
@@ -87,6 +187,10 @@ function pintar(datos) {
       ? "Avance: " + s.pares + " pares de " +
         datos.conciliacion.total + " movimientos PYME."
       : "Reciba ambos archivos intactos para iniciar la conciliación.";
+  document.getElementById("resumen-bootstrap").textContent =
+    (s.cargas || 0) + " cargas · " + (s.cargas_intactas || 0) +
+    " intactas · " + (s.cargas_con_error || 0) + " con error · " +
+    (s.diferencias || 0) + " diferencias.";
 
   var cadena = document.getElementById("cadena");
   cadena.innerHTML = "";
