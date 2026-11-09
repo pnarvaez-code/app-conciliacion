@@ -32,6 +32,15 @@ td { padding: 8px 10px; border-bottom: 1px solid #edf1f5; vertical-align: top; }
 td.numero { text-align: right; }
 td.huella { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12px; }
 td.detalle { max-width: 380px; font-size: 13px; color: #40536a; }
+.fila-ok { background: #f2faf7; }
+.fila-advertencia { background: #fff8e8; }
+.fila-aproximada { background: #fff8e8; }
+.fila-diferencia { background: #fff0ee; }
+.fila-diferencia td:first-child { border-left: 5px solid #b42318; }
+.fila-advertencia td:first-child,
+.fila-aproximada td:first-child { border-left: 5px solid #b7791f; }
+.leyenda-cruce { display: block; color: #5b6b7a; margin-top: 5px; }
+.marca-alerta { color: #b42318; font-size: 12px; }
 .linea { display: flex; gap: 12px; flex-wrap: wrap; align-items: end; }
 label { display: block; font-size: 12px; color: #5b6b7a; margin-bottom: 3px; }
 input { padding: 8px 10px; border: 1px solid #c6d2dd; border-radius: 8px;

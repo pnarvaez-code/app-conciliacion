@@ -188,7 +188,8 @@ def ver_conciliacion(request: Request):
         pares, pendientes, por_tipo = conciliacion.detalle(ultima["id"])
     return plantillas.TemplateResponse(request, "conciliacion.html", _contexto(
         request, usuario, conciliaciones=lista, ultima=ultima, pares=pares,
-        pendientes=pendientes, por_tipo=por_tipo))
+        pendientes=pendientes, por_tipo=por_tipo,
+        recepciones=recepciones.listar(limite=8)))
 
 
 @app.post("/conciliacion")

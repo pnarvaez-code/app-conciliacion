@@ -31,12 +31,44 @@
 </section>
 
 <section class="tarjeta">
+  <h3>Recepciones utilizadas y recientes</h3>
+  <table>
+    <tr><th>Origen</th><th>Archivo</th><th>Estado</th><th>Detalle</th></tr>
+    {% for r in recepciones %}
+    <tr class="{{ 'fila-ok' if r.estado_integridad == 'intacto' else
+                 ('fila-advertencia' if r.estado_integridad == 'sin_sello'
+                  else 'fila-diferencia') }}">
+      <td>{{ r.origen }}</td>
+      <td>{{ r.archivo }}</td>
+      <td>
+        <span class="etiqueta {{ 'baja' if r.estado_integridad == 'intacto'
+          else ('media' if r.estado_integridad == 'sin_sello' else 'alta') }}">
+          {{ r.estado_integridad }}
+        </span>
+        {% if r.estado_integridad == 'alterado' %}
+        <strong class="marca-alerta">Archivo modificado o con diferencias</strong>
+        {% endif %}
+      </td>
+      <td class="detalle">{{ r.detalle or '-' }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+</section>
+
+<section class="tarjeta">
   <h3>Pares cruzados ({{ pares|length }})</h3>
   <table>
     <tr><th>Nivel</th><th>Empresa</th><th>Banco</th></tr>
     {% for p in pares[:50] %}
-    <tr>
-      <td>{{ p.nivel }}</td>
+    <tr class="{{ 'fila-aproximada' if p.nivel == 3 else
+                 ('fila-advertencia' if p.nivel == 2 else 'fila-ok') }}">
+      <td>
+        <span class="etiqueta {{ 'baja' if p.nivel == 1 else
+          ('media' if p.nivel == 2 else 'alta') }}">Nivel {{ p.nivel }}</span>
+        <small class="leyenda-cruce">{{ 'Referencia exacta' if p.nivel == 1 else
+          ('Monto y fecha cercana' if p.nivel == 2 else
+           'Descripcion y monto aproximado') }}</small>
+      </td>
       <td>{{ p.movimiento_empresa.fecha }} · {{ p.movimiento_empresa.descripcion }}
           · {{ "{:,}".format(p.movimiento_empresa.monto).replace(",", ".") }}
           ({{ p.movimiento_empresa.referencia or 'sin ref.' }})</td>
@@ -53,7 +85,7 @@
   <table>
     <tr><th>Tipo de diferencia</th><th>Origen</th><th>Movimiento</th><th>Motivo</th></tr>
     {% for d in pendientes %}
-    <tr>
+    <tr class="fila-diferencia">
       <td><span class="etiqueta alta">{{ d.tipo_diferencia }}</span></td>
       <td>{{ d.origen }}</td>
       <td>{{ d.movimiento.fecha }} · {{ d.movimiento.descripcion }} ·

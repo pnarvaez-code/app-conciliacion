@@ -59,8 +59,27 @@ function pintar(datos) {
   cuerpo.innerHTML = "";
   datos.recepciones.forEach(function (r) {
     var fila = document.createElement("tr");
-    fila.innerHTML = "<td>" + r.origen + "</td><td>" + r.archivo +
-                     "</td><td>" + r.estado + "</td>";
+    fila.className = r.estado === "alterado"
+      ? "fila-diferencia" : (r.estado === "sin_sello" ? "fila-advertencia" : "fila-ok");
+    var origen = document.createElement("td");
+    origen.textContent = r.origen;
+    var archivo = document.createElement("td");
+    archivo.textContent = r.archivo;
+    var estado = document.createElement("td");
+    var etiqueta = document.createElement("span");
+    etiqueta.className = "etiqueta " + (r.estado === "intacto"
+      ? "baja" : (r.estado === "sin_sello" ? "media" : "alta"));
+    etiqueta.textContent = r.estado;
+    estado.appendChild(etiqueta);
+    if (r.estado === "alterado") {
+      var marca = document.createElement("strong");
+      marca.className = "marca-alerta";
+      marca.textContent = " Archivo modificado o con diferencias";
+      estado.appendChild(marca);
+    }
+    fila.appendChild(origen);
+    fila.appendChild(archivo);
+    fila.appendChild(estado);
     cuerpo.appendChild(fila);
   });
 
