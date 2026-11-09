@@ -334,12 +334,13 @@ def visor_estado(request: Request):
     lista = conciliacion.listar(limite=1)
     if lista:
         pares, pendientes, por_tipo = conciliacion.detalle(lista[0]["id"])
+    recepciones_recientes = recepciones.listar(limite=20)
     errores_carga = []
-    for r in recepciones.listar(limite=20):
+    for r in recepciones_recientes:
         if r["estado_integridad"] != "intacto":
             errores_carga.append({
                 "origen": r["origen"], "archivo": r["archivo"],
-                "ruta": r["archivo"], "estado": r["estado_integridad"],
+                "ruta": r["ruta"], "estado": r["estado_integridad"],
                 "sha256": r["sha256"], "bytes": r["bytes"],
                 "motivo": r["detalle"] or "",
                 "usuario": r["subido_por_email"] or "sistema",
@@ -354,12 +355,26 @@ def visor_estado(request: Request):
             "usuario": r["usuario"] or "sistema",
             "fecha": r["created_at"].isoformat(),
         })
+    fuentes = {}
+    for r in recepciones_recientes:
+        if r["estado_integridad"] == "intacto" and r["origen"] not in fuentes:
+            fuentes[r["origen"]] = {
+                "archivo": r["archivo"], "ruta": r["ruta"],
+                "lote": r.get("lote_codigo"),
+            }
+    movimientos_cadena = sum(b["n_movimientos"]
+                             for b in cadena.bloques_completos(limite=12))
+    intactas = sum(r["estado_integridad"] == "intacto"
+                   for r in recepciones_recientes)
+    total_cargas = len(recepciones_recientes) + len(
+        auditoria.listar_rechazos_carga(limite=20))
     return JSONResponse({
         "cadena": [{"indice": b["indice"], "origen": b["origen"],
                     "lote": b["lote_codigo"], "movimientos": b["n_movimientos"]}
                    for b in cadena.bloques_completos(limite=12)],
         "problemas_cadena": cadena.verificar_cadena_local(),
         "recepciones": [{"origen": r["origen"], "archivo": r["archivo"],
+                         "ruta": r["ruta"],
                          "estado": r["estado_integridad"],
                          "detalle": r["detalle"] or "",
                          "sha256": r["sha256"], "bytes": r["bytes"],
@@ -370,6 +385,22 @@ def visor_estado(request: Request):
                           "porcentaje": lista[0]["porcentaje"],
                           "total": lista[0]["total_empresa"]} if lista else None),
         "diferencias": por_tipo or {},
+        "diferencias_detalle": [{
+            "tipo": p["tipo_diferencia"], "origen": p["origen"],
+            "movimiento": p["movimiento"], "motivo": p["motivo"],
+            "fuente": fuentes.get(p["origen"]),
+        } for p in (pendientes or [])],
+        "estadisticas": {
+            "cargas": total_cargas,
+            "cargas_intactas": intactas,
+            "cargas_con_error": len(errores_carga),
+            "movimientos_cadena": movimientos_cadena,
+            "pares": len(pares or []),
+            "diferencias": len(pendientes or []),
+            "avance": (round(100 * len(pares or []) /
+                             lista[0]["total_empresa"])
+                       if lista and lista[0]["total_empresa"] else 0),
+        },
         "alertas_nuevas": alertas.contar_nuevas(),
     })
 

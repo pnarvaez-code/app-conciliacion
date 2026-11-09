@@ -29,6 +29,15 @@
 <p class="tenue">Se actualiza solo cada 3 segundos: cadena, recepciones,
 conciliacion y alertas.</p>
 
+<section class="tarjeta">
+  <h3>Estado de carga de datos</h3>
+  <div id="estadisticas" class="estadisticas-bootstrap"></div>
+  <div class="barra-progreso" role="progressbar" aria-label="Avance de conciliación">
+    <div id="avance-conciliacion" class="barra-progreso-valor"></div>
+  </div>
+  <p id="avance-texto" class="tenue"></p>
+</section>
+
 <section class="tarjeta"><h3>Cadena (ultimos bloques)</h3>
   <div id="cadena" class="bloques-vivo"></div>
   <p id="cadena-aviso" class="tenue"></p>
@@ -44,11 +53,41 @@ conciliacion y alertas.</p>
   <tbody id="errores-carga"></tbody>
 </table>
 </section>
-<section class="tarjeta"><h3>Conciliacion</h3><div id="conciliacion"></div></section>
+<section class="tarjeta">
+  <h3>Conciliacion</h3>
+  <div id="conciliacion"></div>
+  <div id="diferencias-vis" class="visor-diferencias"></div>
+</section>
 </main>
 <script>
 "use strict";
 function pintar(datos) {
+  var estadisticas = document.getElementById("estadisticas");
+  var s = datos.estadisticas || {};
+  estadisticas.innerHTML = "";
+  [
+    ["Cargas recibidas", s.cargas || 0, "total"],
+    ["Cargas intactas", s.cargas_intactas || 0, "ok"],
+    ["Cargas con error", s.cargas_con_error || 0, "error"],
+    ["Pares cruzados", s.pares || 0, "pares"],
+    ["Diferencias", s.diferencias || 0, "diferencias"]
+  ].forEach(function (item) {
+    var tarjeta = document.createElement("div");
+    tarjeta.className = "estadistica-bootstrap " + item[2];
+    tarjeta.innerHTML = "<strong>" + item[1] + "</strong><span>" +
+      item[0] + "</span>";
+    estadisticas.appendChild(tarjeta);
+  });
+  var avance = Math.max(0, Math.min(100, Number(s.avance || 0)));
+  var barra = document.getElementById("avance-conciliacion");
+  barra.style.width = avance + "%";
+  barra.textContent = avance + "%";
+  document.getElementById("avance-texto").textContent =
+    datos.conciliacion
+      ? "Avance: " + s.pares + " pares de " +
+        datos.conciliacion.total + " movimientos PYME."
+      : "Reciba ambos archivos intactos para iniciar la conciliación.";
+
   var cadena = document.getElementById("cadena");
   cadena.innerHTML = "";
   datos.cadena.forEach(function (b) {
@@ -109,13 +148,27 @@ function pintar(datos) {
   var c = document.getElementById("conciliacion");
   if (datos.conciliacion) {
     var diferencias = Object.keys(datos.diferencias).length
-      ? " Diferencias: " + JSON.stringify(datos.diferencias) : " Sin diferencias.";
+      ? " Diferencias detectadas: " + JSON.stringify(datos.diferencias)
+      : " Sin diferencias.";
     c.textContent = datos.conciliacion.conciliados + " de " +
       datos.conciliacion.total + " (" + datos.conciliacion.porcentaje +
       " %)." + diferencias;
   } else {
     c.textContent = "Todavia no se ejecuto ninguna conciliacion.";
   }
+  var listaDiferencias = document.getElementById("diferencias-vis");
+  listaDiferencias.innerHTML = "";
+  (datos.diferencias_detalle || []).forEach(function (d) {
+    var alerta = document.createElement("div");
+    alerta.className = "visor-diferencia";
+    var fuente = d.fuente
+      ? "Archivo: " + d.fuente.archivo + " · Ruta: " + d.fuente.ruta
+      : "No se encontró la fuente intacta.";
+    alerta.textContent = d.tipo + " · " + d.origen + " · " +
+      (d.movimiento.descripcion || "sin descripción") + " · " +
+      d.movimiento.monto + " — " + d.motivo + " — " + fuente;
+    listaDiferencias.appendChild(alerta);
+  });
 }
 function refrescar() {
   fetch("/visor/estado").then(function (r) { return r.json(); })

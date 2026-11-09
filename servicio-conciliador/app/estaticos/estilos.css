@@ -67,3 +67,20 @@ form.enlinea { display: inline; }
 .etiqueta.media { background: #faf0da; color: #8a5b07; }
 .etiqueta.baja { background: #e8f1fa; color: #1f5e8e; }
 .tenue { color: #5b6b7a; font-size: 13px; }
+.estadisticas-bootstrap { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+                          gap: 12px; margin-bottom: 14px; }
+.estadistica-bootstrap { border: 1px solid #d9e1e8; border-left: 5px solid #1f5e8e;
+                         border-radius: 8px; padding: 12px 14px; background: #f8fafc; }
+.estadistica-bootstrap.ok { border-left-color: #0b6b57; }
+.estadistica-bootstrap.error, .estadistica-bootstrap.diferencias { border-left-color: #b42318; }
+.estadistica-bootstrap.pares { border-left-color: #8a5b07; }
+.estadistica-bootstrap strong { display: block; font-size: 24px; color: #17344f; }
+.estadistica-bootstrap span { color: #5b6b7a; font-size: 13px; }
+.barra-progreso { height: 22px; background: #e9eef3; border-radius: 999px;
+                  overflow: hidden; border: 1px solid #d9e1e8; }
+.barra-progreso-valor { height: 100%; width: 0; min-width: 34px; background: #0b6b57;
+                        color: #fff; text-align: center; font-size: 12px;
+                        line-height: 20px; transition: width .3s ease; }
+.visor-diferencias { margin-top: 12px; }
+.visor-diferencia { background: #fff0ee; border-left: 5px solid #b42318;
+                    padding: 9px 12px; margin-top: 8px; font-size: 13px; }
