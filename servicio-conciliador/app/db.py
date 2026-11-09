@@ -89,6 +89,14 @@ def asegurar_esquema():
                 "CREATE UNIQUE INDEX IF NOT EXISTS "
                 "uq_bloques_origen_indice ON bloques (origen, indice)")
             cursor.execute(
+                "ALTER TABLE recepciones DROP CONSTRAINT IF EXISTS "
+                "recepciones_estado_integridad_check")
+            cursor.execute(
+                "ALTER TABLE recepciones ADD CONSTRAINT "
+                "recepciones_estado_integridad_check CHECK "
+                "(estado_integridad IN "
+                "('intacto','alterado','sin_sello','rechazado'))")
+            cursor.execute(
                 "ALTER TABLE conciliaciones ADD COLUMN IF NOT EXISTS "
                 "recepcion_empresa_id BIGINT REFERENCES recepciones(id)")
             cursor.execute(

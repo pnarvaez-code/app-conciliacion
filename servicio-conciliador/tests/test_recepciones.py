@@ -28,20 +28,13 @@ def main():
     assert archivo["sha256"] != sello["hash_archivo"]
     print("Caso 3: archivo alterado detectado antes de guardar la recepción")
 
-    llamadas = []
-
-    def sellos_despues_de_sincronizar(origen):
-        llamadas.append(origen)
-        return [] if len(llamadas) == 1 else [sello]
-
     with patch.object(recepciones.cadena, "sellos_de_origen",
-                      side_effect=sellos_despues_de_sincronizar), \
-            patch.object(recepciones.cadena, "sincronizar_con_pares",
-                         return_value=[]):
+                      return_value=[]), \
+            patch.object(recepciones.cadena, "sincronizar_con_pares") as sincronizar:
         estado, _, _ = recepciones._verificar("EMPRESA", archivo, alterado)
-    assert llamadas == ["EMPRESA", "EMPRESA"]
-    assert estado == "alterado"
-    print("Caso 3: la recepción reintenta después de sincronizar sellos")
+    assert estado == "sin_sello"
+    sincronizar.assert_not_called()
+    print("Carga sin sello: no bloquea por sincronización de Internet")
 
 
 if __name__ == "__main__":

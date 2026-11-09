@@ -25,8 +25,26 @@ def recibir(origen, nombre, contenido, usuario_id, ip=None):
     origen = origen.upper()
     if origen not in ("EMPRESA", "BANCO"):
         raise ValueError("el origen debe ser EMPRESA o BANCO")
-    carga.leer(nombre, contenido.decode("utf-8", errors="replace"))
     archivo = archivos.guardar(nombre, contenido, usuario_id)
+    try:
+        carga.leer(nombre, contenido.decode("utf-8", errors="replace"))
+    except ValueError as error:
+        detalle = "Archivo %s rechazado por formato: %s" % (nombre, error)
+        recepcion = db.ejecutar(
+            "INSERT INTO recepciones (archivo_id, origen, lote_codigo,"
+            " estado_integridad, detalle, verificado_en, verificado_por)"
+            " VALUES (%s, %s, NULL, 'rechazado', %s, now(), %s) RETURNING *",
+            (archivo["id"], origen, detalle, usuario_id))
+        auditoria.registrar(
+            usuario_id, "recepcion_rechazada", "recepciones", recepcion["id"],
+            {"origen": origen, "archivo": nombre, "estado": "rechazado",
+             "sha256": archivo["sha256"], "bytes": archivo["bytes"],
+             "motivo": str(error)}, ip)
+        alertas.crear(
+            "integridad", "alta", "Archivo rechazado: %s de %s" % (nombre, origen),
+            "%s SHA-256=%s; ruta=%s" % (detalle, archivo["sha256"], archivo["ruta"]),
+            referencia=nombre, usuario_id=usuario_id)
+        return recepcion
     estado, lote_codigo, detalle = _verificar(origen, archivo, contenido)
 
     recepcion = db.ejecutar(
@@ -125,13 +143,10 @@ def _verificar(origen, archivo, contenido):
     """Compara el archivo con los sellos del origen. Devuelve (estado, lote, detalle)."""
     sellos_origen = cadena.sellos_de_origen(origen)
     if not sellos_origen:
-        # La carga puede llegar antes que la sincronización periódica de bloques.
-        # Se intenta actualizar la copia local antes de declarar que no hay sello.
-        cadena.sincronizar_con_pares()
-        sellos_origen = cadena.sellos_de_origen(origen)
-    if not sellos_origen:
         return ("sin_sello", None,
-                "No hay sellos del origen %s en la copia local de la cadena." % origen)
+                "No hay sellos del origen %s en la copia local de la cadena. "
+                "La carga se conserva; sincronice Cadena y vuelva a verificar."
+                % origen)
 
     # 1) Coincidencia exacta con un sello: el archivo llego como se emitio.
     for sello in sellos_origen:

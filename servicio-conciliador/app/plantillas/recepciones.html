@@ -26,8 +26,9 @@
     <tr>
       <td>{{ r.verificado_en }}</td><td>{{ r.origen }}</td>
       <td>{{ r.archivo }}</td><td>{{ r.lote_codigo or '' }}</td>
-      <td><span class="etiqueta {{ 'ok' if r.estado_integridad == 'intacto'
-            else ('media' if r.estado_integridad == 'sin_sello' else 'alta') }}">
+      <td><span class="etiqueta {{ 'baja' if r.estado_integridad == 'intacto'
+            else ('media' if r.estado_integridad == 'sin_sello'
+            else 'alta') }}">
           {{ r.estado_integridad }}</span></td>
       <td class="detalle">{{ r.detalle }}</td>
       <td>{{ r.subido_por_email or '' }}</td>

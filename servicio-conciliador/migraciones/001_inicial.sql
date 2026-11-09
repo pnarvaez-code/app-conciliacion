@@ -51,7 +51,8 @@ CREATE TABLE IF NOT EXISTS recepciones (
     origen              TEXT NOT NULL CHECK (origen IN ('EMPRESA','BANCO')),
     lote_codigo         TEXT,
     estado_integridad   TEXT NOT NULL
-                        CHECK (estado_integridad IN ('intacto','alterado','sin_sello')),
+                        CHECK (estado_integridad IN
+                               ('intacto','alterado','sin_sello','rechazado')),
     detalle             TEXT,
     verificado_en       TIMESTAMPTZ,
     verificado_por      BIGINT REFERENCES usuarios(id),
