@@ -19,6 +19,7 @@ import asyncio
 import logging
 import os
 from pathlib import Path
+import hashlib
 
 import httpx
 from fastapi import FastAPI, File, Form, Request, UploadFile
@@ -160,17 +161,21 @@ async def subir_recepcion(request: Request, origen: str = Form(...),
         aviso = "Recepcion %s: %s" % (recepcion["estado_integridad"],
                                       recepcion["detalle"] or "")
     except ValueError as error:
-        detalle = "Archivo %s rechazado: %s" % (archivo.filename, error)
+        nombre_archivo = (archivo.filename or "sin-nombre").replace("\\", "/").rsplit("/", 1)[-1]
+        detalle = "Archivo %s rechazado: %s" % (nombre_archivo, error)
         alertas.crear(
             "integridad", "alta",
             "Archivo %s de %s rechazado por formato"
-            % (archivo.filename, origen.upper()),
+            % (nombre_archivo, origen.upper()),
             detalle, referencia=archivo.filename,
             usuario_id=usuario["id"])
         auditoria.registrar(
             usuario["id"], "recepcion_rechazada", "archivos", None,
-            {"origen": origen.upper(), "archivo": archivo.filename,
-             "motivo": str(error)}, seguridad.ip_de(request))
+            {"origen": origen.upper(), "archivo": nombre_archivo,
+             "ruta_reportada": archivo.filename or "",
+             "sha256": hashlib.sha256(contenido).hexdigest(),
+             "bytes": len(contenido), "motivo": str(error)},
+            seguridad.ip_de(request))
         aviso = "No se pudo recibir el archivo: %s" % error
     return RedirectResponse("/recepciones?aviso=%s" % aviso.replace(" ", "+"),
                             status_code=303)
@@ -181,6 +186,7 @@ async def subir_recepcion(request: Request, origen: str = Form(...),
 @app.get("/conciliacion", response_class=HTMLResponse)
 def ver_conciliacion(request: Request):
     usuario = _exigir_usuario(request)
+    filtro = request.query_params.get("filtro", "todos")
     lista = conciliacion.listar(limite=20)
     pares = pendientes = por_tipo = None
     ultima = lista[0] if lista else None
@@ -193,10 +199,29 @@ def ver_conciliacion(request: Request):
             sello = cadena.sello_de_lote(recepcion["lote_codigo"])
             if sello:
                 lotes[origen] = sello
+    recepciones_recientes = recepciones.listar(limite=20)
+    rechazos = auditoria.listar_rechazos_carga(limite=20)
+    if filtro == "errores":
+        recepciones_recientes = [
+            r for r in recepciones_recientes
+            if r["estado_integridad"] != "intacto"]
+    elif filtro == "intactos":
+        recepciones_recientes = [
+            r for r in recepciones_recientes
+            if r["estado_integridad"] == "intacto"]
+        rechazos = []
+    elif filtro == "alterados":
+        recepciones_recientes = [
+            r for r in recepciones_recientes
+            if r["estado_integridad"] == "alterado"]
+        rechazos = []
+    else:
+        filtro = "todos"
     return plantillas.TemplateResponse(request, "conciliacion.html", _contexto(
         request, usuario, conciliaciones=lista, ultima=ultima, pares=pares,
         pendientes=pendientes, por_tipo=por_tipo,
-        recepciones=recepciones.listar(limite=8), lotes=lotes))
+        recepciones=recepciones_recientes[:8], rechazos=rechazos,
+        lotes=lotes, filtro=filtro))
 
 
 @app.post("/conciliacion")
@@ -302,14 +327,38 @@ def visor_estado(request: Request):
     lista = conciliacion.listar(limite=1)
     if lista:
         pares, pendientes, por_tipo = conciliacion.detalle(lista[0]["id"])
+    errores_carga = []
+    for r in recepciones.listar(limite=20):
+        if r["estado_integridad"] != "intacto":
+            errores_carga.append({
+                "origen": r["origen"], "archivo": r["archivo"],
+                "ruta": r["archivo"], "estado": r["estado_integridad"],
+                "sha256": r["sha256"], "bytes": r["bytes"],
+                "motivo": r["detalle"] or "",
+                "usuario": r["subido_por_email"] or "sistema",
+                "fecha": r["created_at"].isoformat(),
+            })
+    for r in auditoria.listar_rechazos_carga(limite=20):
+        errores_carga.append({
+            "origen": r["origen"], "archivo": r["archivo"],
+            "ruta": r["ruta_reportada"] or r["archivo"],
+            "estado": "rechazado", "sha256": r["sha256"],
+            "bytes": int(r["bytes"] or 0), "motivo": r["motivo"] or "",
+            "usuario": r["usuario"] or "sistema",
+            "fecha": r["created_at"].isoformat(),
+        })
     return JSONResponse({
         "cadena": [{"indice": b["indice"], "origen": b["origen"],
                     "lote": b["lote_codigo"], "movimientos": b["n_movimientos"]}
                    for b in cadena.bloques_completos(limite=12)],
         "problemas_cadena": cadena.verificar_cadena_local(),
         "recepciones": [{"origen": r["origen"], "archivo": r["archivo"],
-                         "estado": r["estado_integridad"]}
+                         "estado": r["estado_integridad"],
+                         "detalle": r["detalle"] or "",
+                         "sha256": r["sha256"], "bytes": r["bytes"],
+                         "usuario": r["subido_por_email"] or "sistema"}
                         for r in recepciones.listar(limite=6)],
+        "errores_carga": errores_carga[:12],
         "conciliacion": ({"conciliados": lista[0]["conciliados"],
                           "porcentaje": lista[0]["porcentaje"],
                           "total": lista[0]["total_empresa"]} if lista else None),

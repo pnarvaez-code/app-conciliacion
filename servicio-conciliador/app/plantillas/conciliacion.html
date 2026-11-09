@@ -32,14 +32,25 @@
 
 <section class="tarjeta">
   <h3>Recepciones utilizadas y recientes</h3>
+  <form method="get" action="/conciliacion" class="linea filtro-cargas">
+    <label for="filtro">Filtrar cargas</label>
+    <select id="filtro" name="filtro">
+      <option value="todos" {{ 'selected' if filtro == 'todos' else '' }}>Todas</option>
+      <option value="errores" {{ 'selected' if filtro == 'errores' else '' }}>Con errores</option>
+      <option value="alterados" {{ 'selected' if filtro == 'alterados' else '' }}>Alteradas</option>
+      <option value="intactos" {{ 'selected' if filtro == 'intactos' else '' }}>Intactas</option>
+    </select>
+    <button type="submit">Aplicar filtro</button>
+  </form>
   <table>
-    <tr><th>Origen</th><th>Archivo</th><th>Estado</th><th>Detalle</th></tr>
+    <tr><th>Origen</th><th>Archivo / ruta reportada</th><th>Estado</th>
+        <th>SHA-256 / tamaño</th><th>Detalle</th></tr>
     {% for r in recepciones %}
     <tr class="{{ 'fila-ok' if r.estado_integridad == 'intacto' else
                  ('fila-advertencia' if r.estado_integridad == 'sin_sello'
                   else 'fila-diferencia') }}">
       <td>{{ r.origen }}</td>
-      <td>{{ r.archivo }}</td>
+      <td>{{ r.archivo }}<br><small>{{ r.ruta }}</small></td>
       <td>
         <span class="etiqueta {{ 'baja' if r.estado_integridad == 'intacto'
           else ('media' if r.estado_integridad == 'sin_sello' else 'alta') }}">
@@ -49,10 +60,27 @@
         <strong class="marca-alerta">Archivo modificado o con diferencias</strong>
         {% endif %}
       </td>
+      <td class="detalle">{{ r.sha256 }}<br>{{ r.bytes }} bytes</td>
       <td class="detalle">{{ r.detalle or '-' }}</td>
     </tr>
     {% endfor %}
   </table>
+  {% if rechazos %}
+  <h4>Cargas rechazadas por formato</h4>
+  <table>
+    <tr><th>Origen</th><th>Archivo / ruta reportada</th><th>Estado</th>
+        <th>SHA-256 / tamaño</th><th>Motivo y responsable</th></tr>
+    {% for r in rechazos %}
+    <tr class="fila-diferencia">
+      <td>{{ r.origen }}</td>
+      <td>{{ r.archivo }}<br><small>{{ r.ruta_reportada }}</small></td>
+      <td><span class="etiqueta alta">rechazado</span></td>
+      <td class="detalle">{{ r.sha256 }}<br>{{ r.bytes }} bytes</td>
+      <td class="detalle">{{ r.motivo }}<br>{{ r.usuario or 'sistema' }} · {{ r.created_at }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+  {% endif %}
 </section>
 
 <section class="tarjeta">

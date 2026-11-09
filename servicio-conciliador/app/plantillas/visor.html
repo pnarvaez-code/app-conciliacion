@@ -34,7 +34,15 @@ conciliacion y alertas.</p>
   <p id="cadena-aviso" class="tenue"></p>
 </section>
 <section class="tarjeta"><h3>Recepciones recientes</h3>
-  <table><tbody id="recepciones"></tbody></table>
+<table><tbody id="recepciones"></tbody></table>
+</section>
+<section class="tarjeta">
+<h3>Errores de carga</h3>
+<table>
+  <thead><tr><th>Origen</th><th>Archivo / ruta</th><th>Estado</th>
+    <th>SHA-256 / tamaño</th><th>Motivo / responsable</th></tr></thead>
+  <tbody id="errores-carga"></tbody>
+</table>
 </section>
 <section class="tarjeta"><h3>Conciliacion</h3><div id="conciliacion"></div></section>
 </main>
@@ -81,6 +89,21 @@ function pintar(datos) {
     fila.appendChild(archivo);
     fila.appendChild(estado);
     cuerpo.appendChild(fila);
+  });
+
+  var errores = document.getElementById("errores-carga");
+  errores.innerHTML = "";
+  datos.errores_carga.forEach(function (e) {
+    var fila = document.createElement("tr");
+    fila.className = "fila-diferencia";
+    [e.origen, e.archivo + " (" + (e.ruta || e.archivo) + ")",
+     e.estado, (e.sha256 || "-") + " / " + e.bytes + " bytes",
+     (e.motivo || "-") + " / " + e.usuario].forEach(function (valor) {
+      var celda = document.createElement("td");
+      celda.textContent = valor;
+      fila.appendChild(celda);
+    });
+    errores.appendChild(fila);
   });
 
   var c = document.getElementById("conciliacion");

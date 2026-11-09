@@ -30,3 +30,18 @@ def listar(limite=200):
         " a.created_at, u.email AS usuario "
         "FROM auditoria a LEFT JOIN usuarios u ON u.id = a.usuario_id "
         "ORDER BY a.id DESC LIMIT %s", (limite,))
+
+
+def listar_rechazos_carga(limite=100):
+    """Devuelve archivos rechazados con sus datos forenses de carga."""
+    return db.consultar(
+        "SELECT a.id, a.created_at, a.ip, u.email AS usuario,"
+        " a.detalle->>'origen' AS origen,"
+        " a.detalle->>'archivo' AS archivo,"
+        " a.detalle->>'ruta_reportada' AS ruta_reportada,"
+        " a.detalle->>'sha256' AS sha256,"
+        " a.detalle->>'bytes' AS bytes,"
+        " a.detalle->>'motivo' AS motivo"
+        " FROM auditoria a LEFT JOIN usuarios u ON u.id = a.usuario_id"
+        " WHERE a.accion = 'recepcion_rechazada'"
+        " ORDER BY a.id DESC LIMIT %s", (limite,))
