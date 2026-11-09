@@ -186,10 +186,17 @@ def ver_conciliacion(request: Request):
     ultima = lista[0] if lista else None
     if ultima:
         pares, pendientes, por_tipo = conciliacion.detalle(ultima["id"])
+    lotes = {}
+    for origen in ("EMPRESA", "BANCO"):
+        recepcion = recepciones.ultima_intacta(origen)
+        if recepcion:
+            sello = cadena.sello_de_lote(recepcion["lote_codigo"])
+            if sello:
+                lotes[origen] = sello
     return plantillas.TemplateResponse(request, "conciliacion.html", _contexto(
         request, usuario, conciliaciones=lista, ultima=ultima, pares=pares,
         pendientes=pendientes, por_tipo=por_tipo,
-        recepciones=recepciones.listar(limite=8)))
+        recepciones=recepciones.listar(limite=8), lotes=lotes))
 
 
 @app.post("/conciliacion")

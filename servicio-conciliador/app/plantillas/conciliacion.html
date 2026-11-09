@@ -59,11 +59,27 @@
   <h3>Pares cruzados ({{ pares|length }})</h3>
   <p class="tenue">El nivel de cruce indica el criterio utilizado; no corresponde
     al lote de origen del archivo.</p>
+  <div class="resumen-lotes">
+    {% for origen, etiqueta in [('EMPRESA', 'PYME'), ('BANCO', 'BANCO')] %}
+      {% if lotes.get(origen) %}
+      <span class="etiqueta baja">{{ etiqueta }} · Lote {{ lotes[origen].indice }}
+        · {{ lotes[origen].lote_codigo }}</span>
+      {% endif %}
+    {% endfor %}
+  </div>
   <table>
-    <tr><th>Nivel de cruce</th><th>Empresa</th><th>Banco</th></tr>
+    <tr><th>Lotes de origen</th><th>Nivel de cruce</th><th>Empresa</th><th>Banco</th></tr>
     {% for p in pares[:50] %}
     <tr class="{{ 'fila-aproximada' if p.nivel == 3 else
                  ('fila-advertencia' if p.nivel == 2 else 'fila-ok') }}">
+      <td>
+        {% if lotes.get('EMPRESA') %}
+        <small>PYME · Lote {{ lotes['EMPRESA'].indice }}</small><br>
+        {% endif %}
+        {% if lotes.get('BANCO') %}
+        <small>BANCO · Lote {{ lotes['BANCO'].indice }}</small>
+        {% endif %}
+      </td>
       <td>
         <span class="etiqueta {{ 'baja' if p.nivel == 1 else
           ('media' if p.nivel == 2 else 'alta') }}">Cruce {{ p.nivel }}</span>

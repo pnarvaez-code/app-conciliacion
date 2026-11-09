@@ -40,6 +40,7 @@ td.detalle { max-width: 380px; font-size: 13px; color: #40536a; }
 .fila-advertencia td:first-child,
 .fila-aproximada td:first-child { border-left: 5px solid #b7791f; }
 .leyenda-cruce { display: block; color: #5b6b7a; margin-top: 5px; }
+.resumen-lotes { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
 .marca-alerta { color: #b42318; font-size: 12px; }
 .linea { display: flex; gap: 12px; flex-wrap: wrap; align-items: end; }
 label { display: block; font-size: 12px; color: #5b6b7a; margin-bottom: 3px; }

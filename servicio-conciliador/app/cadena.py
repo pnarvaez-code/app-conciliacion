@@ -139,7 +139,7 @@ def sellos_de_origen(origen):
 
 def sello_de_lote(lote_codigo):
     return db.consultar_uno(
-        "SELECT lote_codigo, archivo, hash_archivo, hashes_movimientos,"
+        "SELECT indice, origen, lote_codigo, archivo, hash_archivo, hashes_movimientos,"
         " n_movimientos, sellado_en, emitido_por, hash_bloque"
         " FROM bloques WHERE lote_codigo = %s ORDER BY indice DESC LIMIT 1",
         (lote_codigo,))
