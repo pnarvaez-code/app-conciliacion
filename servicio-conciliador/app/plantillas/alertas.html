@@ -14,6 +14,9 @@
       <td class="detalle">{{ a.detalle }}</td>
       <td>{{ a.estado }}</td>
       <td>
+        {% if a.tipo == 'diferencia' %}
+        <a class="secundario" href="/conciliacion#diferencias">Ver diferencias</a>
+        {% endif %}
         {% if a.estado == 'nueva' %}
         <form method="post" action="/alertas/{{ a.id }}/estado" class="enlinea">
           <input type="hidden" name="estado" value="leida">

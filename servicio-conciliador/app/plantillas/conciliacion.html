@@ -91,9 +91,16 @@
 </section>
 
 <section class="tarjeta">
-  <h3>Pares cruzados ({{ pares|length }})</h3>
+  <h3>Pares cruzados sin diferencias ({{ pares|length }})</h3>
   <p class="tenue">El nivel de cruce indica el criterio utilizado; no corresponde
     al lote de origen del archivo.</p>
+  {% if por_tipo %}
+  <div class="aviso fila-diferencia">
+    <strong>Hay diferencias operativas en esta conciliación.</strong>
+    La alerta resume los pendientes y no representa un par cruzado exitoso.
+    Revisa la sección <a href="#diferencias">Diferencias detectadas</a>.
+  </div>
+  {% endif %}
   <div class="resumen-lotes">
     {% for origen, etiqueta in [('EMPRESA', 'PYME'), ('BANCO', 'BANCO')] %}
       {% if lotes.get(origen) %}
@@ -133,14 +140,28 @@
   </table>
 </section>
 
-<section class="tarjeta">
+<section class="tarjeta" id="diferencias">
   <h3>Diferencias y pendientes ({{ pendientes|length }})</h3>
+  {% if por_tipo %}
+  <p class="tenue">Estas filas son las que originan la alerta de diferencias.
+    La ruta permite localizar el archivo original recibido de PYME o Banco.</p>
+  {% endif %}
   <table>
-    <tr><th>Tipo de diferencia</th><th>Origen</th><th>Movimiento</th><th>Motivo</th></tr>
+    <tr><th>Tipo de diferencia</th><th>Origen y archivo fuente</th>
+        <th>Movimiento</th><th>Motivo</th></tr>
     {% for d in pendientes %}
-    <tr class="fila-diferencia">
+    <tr class="fila-diferencia {{ 'marca-alerta' if d.tipo_diferencia == 'monto_distinto' else '' }}">
       <td><span class="etiqueta alta">{{ d.tipo_diferencia }}</span></td>
-      <td>{{ d.origen }}</td>
+      <td>
+        <strong>{{ 'PYME' if d.origen == 'EMPRESA' else 'BANCO' }}</strong><br>
+        {% if fuentes.get(d.origen) %}
+        <small>Archivo: {{ fuentes[d.origen].archivo }}</small><br>
+        <small>Ruta: <code>{{ fuentes[d.origen].ruta }}</code></small><br>
+        <small>Lote: {{ fuentes[d.origen].lote_codigo or 'sin lote' }}</small>
+        {% else %}
+        <small>No se encontró la recepción intacta usada.</small>
+        {% endif %}
+      </td>
       <td>{{ d.movimiento.fecha }} · {{ d.movimiento.descripcion }} ·
           {{ "{:,}".format(d.movimiento.monto).replace(",", ".") }}</td>
       <td class="detalle">{{ d.motivo }}</td>

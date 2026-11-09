@@ -193,9 +193,16 @@ def ver_conciliacion(request: Request):
     if ultima:
         pares, pendientes, por_tipo = conciliacion.detalle(ultima["id"])
     lotes = {}
+    fuentes = {}
     for origen in ("EMPRESA", "BANCO"):
         recepcion = recepciones.ultima_intacta(origen)
         if recepcion:
+            fuentes[origen] = {
+                "archivo": recepcion["archivo"],
+                "ruta": recepcion["ruta"],
+                "lote_codigo": recepcion.get("lote_codigo"),
+                "sha256": recepcion.get("sha256"),
+            }
             sello = cadena.sello_de_lote(recepcion["lote_codigo"])
             if sello:
                 lotes[origen] = sello
@@ -221,7 +228,7 @@ def ver_conciliacion(request: Request):
         request, usuario, conciliaciones=lista, ultima=ultima, pares=pares,
         pendientes=pendientes, por_tipo=por_tipo,
         recepciones=recepciones_recientes[:8], rechazos=rechazos,
-        lotes=lotes, filtro=filtro))
+        lotes=lotes, fuentes=fuentes, filtro=filtro))
 
 
 @app.post("/conciliacion")
