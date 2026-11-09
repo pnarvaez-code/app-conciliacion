@@ -49,6 +49,11 @@ def huella_archivo(contenido):
     return huella(contenido)
 
 
+def compare_hashes(esperado, recibido):
+    """Compara dos huellas sin filtrar diferencias por tiempo de ejecución."""
+    return hmac.compare_digest(str(esperado or ""), str(recibido or ""))
+
+
 CAMPOS_SELLADOS = ("indice", "origen", "lote_codigo", "archivo", "n_movimientos",
                    "hashes_movimientos", "hash_raiz", "hash_archivo",
                    "hash_anterior", "emitido_por", "sellado_en")
