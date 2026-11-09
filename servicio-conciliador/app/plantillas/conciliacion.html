@@ -57,14 +57,16 @@
 
 <section class="tarjeta">
   <h3>Pares cruzados ({{ pares|length }})</h3>
+  <p class="tenue">El nivel de cruce indica el criterio utilizado; no corresponde
+    al lote de origen del archivo.</p>
   <table>
-    <tr><th>Nivel</th><th>Empresa</th><th>Banco</th></tr>
+    <tr><th>Nivel de cruce</th><th>Empresa</th><th>Banco</th></tr>
     {% for p in pares[:50] %}
     <tr class="{{ 'fila-aproximada' if p.nivel == 3 else
                  ('fila-advertencia' if p.nivel == 2 else 'fila-ok') }}">
       <td>
         <span class="etiqueta {{ 'baja' if p.nivel == 1 else
-          ('media' if p.nivel == 2 else 'alta') }}">Nivel {{ p.nivel }}</span>
+          ('media' if p.nivel == 2 else 'alta') }}">Cruce {{ p.nivel }}</span>
         <small class="leyenda-cruce">{{ 'Referencia exacta' if p.nivel == 1 else
           ('Monto y fecha cercana' if p.nivel == 2 else
            'Descripcion y monto aproximado') }}</small>
