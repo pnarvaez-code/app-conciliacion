@@ -386,6 +386,17 @@ def visor_estado(request: Request):
                              for b in cadena.bloques_completos(limite=12))
     intactas = sum(r["estado_integridad"] == "intacto"
                    for r in recepciones_recientes)
+    cargas_por_estado = {}
+    cargas_por_origen = {}
+    for r in recepciones_recientes:
+        cargas_por_estado[r["estado_integridad"]] = \
+            cargas_por_estado.get(r["estado_integridad"], 0) + 1
+        cargas_por_origen[r["origen"]] = cargas_por_origen.get(
+            r["origen"], 0) + 1
+    niveles = {}
+    for par in pares or []:
+        nivel = "Nivel %s" % par["nivel"]
+        niveles[nivel] = niveles.get(nivel, 0) + 1
     total_cargas = len(recepciones_recientes) + len(
         auditoria.listar_rechazos_carga(limite=20))
     return JSONResponse({
@@ -420,6 +431,17 @@ def visor_estado(request: Request):
             "avance": (round(100 * len(pares or []) /
                              lista[0]["total_empresa"])
                        if lista and lista[0]["total_empresa"] else 0),
+        },
+        "graficos": {
+            "cargas_por_estado": cargas_por_estado,
+            "cargas_por_origen": cargas_por_origen,
+            "movimientos_por_lote": [
+                {"etiqueta": "%s · %s" % (b["origen"], b["lote_codigo"]),
+                 "valor": b["n_movimientos"]}
+                for b in reversed(cadena.bloques_completos(limite=12))
+            ],
+            "niveles_cruce": niveles,
+            "diferencias_por_tipo": por_tipo or {},
         },
         "alertas_nuevas": alertas.contar_nuevas(),
     })

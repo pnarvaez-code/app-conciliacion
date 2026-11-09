@@ -52,6 +52,36 @@
                 padding: 18px; box-shadow: 0 4px 14px rgba(32, 54, 120, .04); }
   .visor-card h3 { color: #172b4d; margin-bottom: 14px; }
   .visor-card table { font-size: 13px; }
+  .visor-chart-grid { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr));
+                      gap: 16px; margin: 20px 0; }
+  .visor-chart-card { grid-column: span 4; min-height: 270px; }
+  .visor-chart-card.wide { grid-column: span 8; }
+  .visor-chart-card h3 { display: flex; justify-content: space-between; align-items: center;
+                         font-size: 15px; }
+  .chart-subtitle { color: #8995a8; font-size: 11px; font-weight: 500; }
+  .chart-bars { display: grid; gap: 12px; margin-top: 20px; }
+  .chart-bar-row { display: grid; grid-template-columns: 105px 1fr 34px; gap: 9px;
+                   align-items: center; font-size: 12px; color: #516078; }
+  .chart-bar-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .chart-track { height: 12px; border-radius: 99px; background: #edf1f7; overflow: hidden; }
+  .chart-bar { height: 100%; border-radius: inherit; background: #3857d6;
+               transition: width .35s ease; }
+  .chart-value { text-align: right; color: #172b4d; font-weight: 700; }
+  .chart-legend { display: grid; gap: 9px; margin-top: 18px; }
+  .chart-legend-row { display: flex; align-items: center; gap: 8px; color: #516078;
+                      font-size: 12px; }
+  .chart-dot { width: 10px; height: 10px; border-radius: 50%; flex: 0 0 10px; }
+  .chart-donut-wrap { display: flex; gap: 22px; align-items: center; min-height: 190px; }
+  .chart-donut { width: 142px; height: 142px; border-radius: 50%; position: relative;
+                 background: conic-gradient(#0ca678 0 25%, #f0a900 25% 50%,
+                 #e53b35 50% 75%, #3156d3 75% 100%); flex: 0 0 142px; }
+  .chart-donut::after { content: ""; position: absolute; inset: 30px; background: #fff;
+                        border-radius: 50%; }
+  .chart-donut-center { position: absolute; z-index: 1; inset: 0; display: grid;
+                        place-items: center; color: #172b4d; font-size: 24px; font-weight: 800; }
+  .chart-empty { color: #8995a8; font-size: 13px; padding: 48px 0; text-align: center; }
+  .chart-axis { display: flex; justify-content: space-between; color: #a0a9b8;
+                font-size: 10px; margin: 10px 0 0 114px; }
   .bloques-vivo { display: flex; gap: 8px; flex-wrap: wrap; }
   .bloque-vivo { border: 1px solid #dfe5ff; background: #f5f7ff; border-radius: 8px;
                  padding: 8px 12px; min-width: 130px; font-size: 13px; }
@@ -61,6 +91,7 @@
   @media (max-width: 1000px) {
     .visor-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .visor-panels { grid-template-columns: 1fr; }
+    .visor-chart-card, .visor-chart-card.wide { grid-column: span 6; }
   }
   @media (max-width: 700px) {
     .visor-topbar { padding: 0 16px; height: auto; min-height: 64px; }
@@ -71,6 +102,8 @@
     .visor-content { padding: 20px 14px 32px; }
     .visor-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
     .visor-kpi { padding: 13px; }
+    .visor-chart-card, .visor-chart-card.wide { grid-column: span 12; }
+    .chart-donut-wrap { justify-content: center; }
   }
 </style>
 </head>
@@ -114,6 +147,29 @@
   <div class="visor-kpi red"><span>Diferencias</span><strong id="kpi-diferencias">0</strong><small>alertas a revisar</small></div>
 </div>
 
+<section class="visor-chart-grid" aria-label="Analítica del visor">
+  <div class="visor-card visor-chart-card">
+    <h3>Integridad de cargas <span class="chart-subtitle">Estado actual</span></h3>
+    <div id="chart-integridad"></div>
+  </div>
+  <div class="visor-card visor-chart-card wide">
+    <h3>Movimientos por lote <span class="chart-subtitle">Cadena local</span></h3>
+    <div id="chart-lotes"></div>
+  </div>
+  <div class="visor-card visor-chart-card">
+    <h3>Cargas por origen <span class="chart-subtitle">PYME vs Banco</span></h3>
+    <div id="chart-origen"></div>
+  </div>
+  <div class="visor-card visor-chart-card">
+    <h3>Niveles de cruce <span class="chart-subtitle">Automático</span></h3>
+    <div id="chart-niveles"></div>
+  </div>
+  <div class="visor-card visor-chart-card wide">
+    <h3>Diferencias operativas <span class="chart-subtitle">Por tipo</span></h3>
+    <div id="chart-diferencias"></div>
+  </div>
+</section>
+
 <div class="visor-panels">
 <div>
 <section class="visor-card"><h3>Cadena (últimos bloques)</h3>
@@ -147,6 +203,58 @@
 </main>
 <script>
 "use strict";
+var chartColors = ["#3857d6", "#0ca678", "#f0a900", "#e53b35", "#8b5cf6", "#0e7490"];
+function esc(value) {
+  return String(value).replace(/[&<>"']/g, function (char) {
+    return {"&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;"}[char];
+  });
+}
+function chartEntries(values) {
+  return Object.keys(values || {}).map(function (key) {
+    return { label: key, value: Number(values[key] || 0) };
+  }).filter(function (item) { return item.value > 0; });
+}
+function pintarBarras(id, values, colors) {
+  var target = document.getElementById(id);
+  var entries = Array.isArray(values) ? values : chartEntries(values);
+  if (!entries.length) {
+    target.innerHTML = '<div class="chart-empty">Sin datos para mostrar todavía</div>';
+    return;
+  }
+  var max = Math.max.apply(null, entries.map(function (item) { return item.value; }));
+  target.innerHTML = '<div class="chart-bars">' + entries.map(function (item, index) {
+    var width = Math.max(4, item.value / max * 100);
+    return '<div class="chart-bar-row"><span class="chart-bar-label" title="' +
+      esc(item.label) + '">' + esc(item.label) + '</span><span class="chart-track"><span ' +
+      'class="chart-bar" style="width:' + width + '%;background:' +
+      (colors[index % colors.length]) + '"></span></span><b class="chart-value">' +
+      item.value + '</b></div>';
+  }).join("") + '</div><div class="chart-axis"><span>0</span><span>' + max +
+    '</span></div>';
+}
+function pintarDonut(id, values) {
+  var target = document.getElementById(id);
+  var entries = chartEntries(values);
+  var total = entries.reduce(function (sum, item) { return sum + item.value; }, 0);
+  if (!total) {
+    target.innerHTML = '<div class="chart-empty">Sin cargas registradas</div>';
+    return;
+  }
+  var start = 0;
+  var stops = entries.map(function (item, index) {
+    var end = start + item.value / total * 100;
+    var stop = chartColors[index % chartColors.length] + " " + start + "% " + end + "%";
+    start = end;
+    return stop;
+  }).join(", ");
+  target.innerHTML = '<div class="chart-donut-wrap"><div class="chart-donut" style="' +
+    'background:conic-gradient(' + stops + ')"><div class="chart-donut-center">' +
+    total + '</div></div><div class="chart-legend">' + entries.map(function (item, index) {
+    return '<div class="chart-legend-row"><i class="chart-dot" style="background:' +
+      chartColors[index % chartColors.length] + '"></i><span>' + esc(item.label) +
+      '</span><b>' + item.value + '</b></div>';
+  }).join("") + '</div></div>';
+}
 function pintar(datos) {
   var estadisticas = document.getElementById("estadisticas");
   var s = datos.estadisticas || {};
@@ -154,6 +262,13 @@ function pintar(datos) {
   document.getElementById("kpi-movimientos").textContent = s.movimientos_cadena || 0;
   document.getElementById("kpi-pares").textContent = s.pares || 0;
   document.getElementById("kpi-diferencias").textContent = s.diferencias || 0;
+  var graficos = datos.graficos || {};
+  pintarDonut("chart-integridad", graficos.cargas_por_estado);
+  pintarBarras("chart-lotes", graficos.movimientos_por_lote || [], chartColors);
+  pintarBarras("chart-origen", graficos.cargas_por_origen, ["#3156d3", "#0ca678"]);
+  pintarBarras("chart-niveles", graficos.niveles_cruce, ["#8b5cf6", "#3857d6", "#0e7490"]);
+  pintarBarras("chart-diferencias", graficos.diferencias_por_tipo,
+    ["#e53b35", "#f0a900", "#8b5cf6", "#0e7490"]);
   estadisticas.innerHTML = "";
   [
     ["Cargas recibidas", s.cargas || 0, "total"],
