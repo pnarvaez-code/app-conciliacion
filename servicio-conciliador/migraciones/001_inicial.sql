@@ -67,6 +67,8 @@ CREATE TABLE IF NOT EXISTS conciliaciones (
     total_banco         INTEGER NOT NULL DEFAULT 0,
     conciliados         INTEGER NOT NULL DEFAULT 0,
     porcentaje          INTEGER NOT NULL DEFAULT 0,
+    recepcion_empresa_id BIGINT REFERENCES recepciones(id),
+    recepcion_banco_id  BIGINT REFERENCES recepciones(id),
     ejecutada_por       BIGINT REFERENCES usuarios(id),
     created_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at          TIMESTAMPTZ NOT NULL DEFAULT now()

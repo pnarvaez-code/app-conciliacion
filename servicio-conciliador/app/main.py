@@ -202,23 +202,30 @@ def ver_conciliacion(request: Request):
     filtro = request.query_params.get("filtro", "todos")
     lista = conciliacion.listar(limite=20)
     pares = pendientes = por_tipo = None
-    ultima = lista[0] if lista else None
+    operacion = request.query_params.get("operacion")
+    ultima = None
+    if operacion:
+        try:
+            operacion_id = int(operacion)
+        except ValueError:
+            operacion_id = 0
+        ultima = next((fila for fila in lista if fila["id"] == operacion_id), None)
+    if ultima is None and lista:
+        ultima = lista[0]
     if ultima:
         pares, pendientes, por_tipo = conciliacion.detalle(ultima["id"])
     lotes = {}
     fuentes = {}
-    for origen in ("EMPRESA", "BANCO"):
-        recepcion = recepciones.ultima_intacta(origen)
-        if recepcion:
-            fuentes[origen] = {
-                "archivo": recepcion["archivo"],
-                "ruta": recepcion["ruta"],
-                "lote_codigo": recepcion.get("lote_codigo"),
-                "sha256": recepcion.get("sha256"),
+    if ultima:
+        for fuente in conciliacion.fuentes(ultima["id"]):
+            fuentes[fuente["origen"]] = {
+                "archivo": fuente["archivo"], "ruta": fuente["ruta"],
+                "lote_codigo": fuente["lote_codigo"],
+                "sha256": fuente["sha256"],
             }
-            sello = cadena.sello_de_lote(recepcion["lote_codigo"])
+            sello = cadena.sello_de_lote(fuente["lote_codigo"])
             if sello:
-                lotes[origen] = sello
+                lotes[fuente["origen"]] = sello
     recepciones_recientes = recepciones.listar(limite=20)
     rechazos = auditoria.listar_rechazos_carga(limite=20)
     if filtro == "errores":

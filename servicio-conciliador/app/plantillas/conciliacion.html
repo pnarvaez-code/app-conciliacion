@@ -10,6 +10,28 @@
   diferencia para el informe.</p>
 </section>
 
+{% if conciliaciones %}
+<section class="tarjeta">
+  <h3>Operaciones de conciliación guardadas</h3>
+  <p class="tenue">Cada ejecución conserva sus propios pares, diferencias,
+    lotes y archivos fuente. Seleccione una operación para demostrar cada caso
+    sin sobrescribir el historial.</p>
+  <form method="get" action="/conciliacion" class="linea">
+    <label for="operacion">Operación a consultar</label>
+    <select id="operacion" name="operacion">
+      {% for c in conciliaciones %}
+      <option value="{{ c.id }}" {{ 'selected' if ultima and c.id == ultima.id else '' }}>
+        #{{ c.id }} · {{ c.created_at }} · {{ c.conciliados }}/{{ c.total_empresa }}
+        {% if c.archivo_empresa %} · {{ c.archivo_empresa }}{% endif %}
+        {% if c.archivo_banco %} · {{ c.archivo_banco }}{% endif %}
+      </option>
+      {% endfor %}
+    </select>
+    <button type="submit">Ver operación</button>
+  </form>
+</section>
+{% endif %}
+
 <section class="tarjeta">
   <h3>Cargas recibidas y errores</h3>
   <p class="tenue">Se conserva la trazabilidad de cada archivo: origen,
@@ -72,7 +94,9 @@
 
 {% if ultima %}
 <section class="tarjeta">
-  <h3>Ultimo informe ({{ ultima.created_at }})</h3>
+  <h3>Informe de operación #{{ ultima.id }} ({{ ultima.created_at }})</h3>
+  <p class="tenue">Esta vista corresponde exclusivamente a los archivos
+    usados en esta ejecución; las siguientes conciliaciones se guardan aparte.</p>
   <div class="indicadores">
     <div class="indicador"><span>{{ ultima.conciliados }}</span>pares cruzados</div>
     <div class="indicador"><span>{{ ultima.total_empresa }}</span>movimientos empresa</div>

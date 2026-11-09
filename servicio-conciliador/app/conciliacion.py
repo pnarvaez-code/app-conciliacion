@@ -41,13 +41,14 @@ def ejecutar(usuario_id, ip=None):
 
     fila = db.ejecutar(
         "INSERT INTO conciliaciones (desde, hasta, total_empresa, total_banco,"
-        " conciliados, porcentaje, ejecutada_por)"
-        " VALUES (%s, %s, %s, %s, %s, %s, %s) RETURNING *",
+        " conciliados, porcentaje, recepcion_empresa_id, recepcion_banco_id,"
+        " ejecutada_por)"
+        " VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING *",
         (_fecha_min(movimientos_empresa + movimientos_banco),
          _fecha_max(movimientos_empresa + movimientos_banco),
          total_empresa, total_banco, len(pares),
          round(100.0 * len(pares) / total_empresa) if total_empresa else 0,
-         usuario_id))
+         empresa["id"], banco["id"], usuario_id))
     conciliacion_id = fila["id"]
 
     for movimiento_empresa, movimiento_banco, nivel in pares:
@@ -90,9 +91,34 @@ def ejecutar(usuario_id, ip=None):
 
 def listar(limite=50):
     return db.consultar(
-        "SELECT c.*, u.email AS ejecutada_por_email FROM conciliaciones c "
+        "SELECT c.*, u.email AS ejecutada_por_email,"
+        " ae.nombre AS archivo_empresa, ab.nombre AS archivo_banco"
+        " FROM conciliaciones c "
         "LEFT JOIN usuarios u ON u.id = c.ejecutada_por "
+        "LEFT JOIN recepciones re ON re.id = c.recepcion_empresa_id "
+        "LEFT JOIN archivos ae ON ae.id = re.archivo_id "
+        "LEFT JOIN recepciones rb ON rb.id = c.recepcion_banco_id "
+        "LEFT JOIN archivos ab ON ab.id = rb.archivo_id "
         "ORDER BY c.id DESC LIMIT %s", (limite,))
+
+
+def fuentes(conciliacion_id):
+    return db.consultar(
+        "SELECT r.origen, r.lote_codigo, r.estado_integridad,"
+        " r.archivo, r.ruta, r.sha256, r.bytes"
+        " FROM conciliaciones c"
+        " LEFT JOIN recepciones re ON re.id = c.recepcion_empresa_id"
+        " LEFT JOIN archivos ae ON ae.id = re.archivo_id"
+        " LEFT JOIN recepciones rb ON rb.id = c.recepcion_banco_id"
+        " LEFT JOIN archivos ab ON ab.id = rb.archivo_id"
+        " CROSS JOIN LATERAL (VALUES"
+        " ('EMPRESA', re.lote_codigo, re.estado_integridad, ae.nombre,"
+        " ae.ruta, ae.sha256, ae.bytes),"
+        " ('BANCO', rb.lote_codigo, rb.estado_integridad, ab.nombre,"
+        " ab.ruta, ab.sha256, ab.bytes)) AS r(origen, lote_codigo,"
+        " estado_integridad, archivo, ruta, sha256, bytes)"
+        " WHERE c.id = %s AND r.archivo IS NOT NULL",
+        (conciliacion_id,))
 
 
 def detalle(conciliacion_id):

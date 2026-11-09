@@ -74,7 +74,7 @@ def aplicar_migracion():
 
 
 def asegurar_esquema():
-    """Ajusta bases creadas con la migracion anterior de bloques."""
+    """Ajusta bases existentes sin perder el historial operativo."""
     existe = consultar_uno(
         "SELECT 1 AS hay FROM information_schema.tables "
         "WHERE table_schema = %s AND table_name = 'bloques'",
@@ -88,6 +88,12 @@ def asegurar_esquema():
             cursor.execute(
                 "CREATE UNIQUE INDEX IF NOT EXISTS "
                 "uq_bloques_origen_indice ON bloques (origen, indice)")
+            cursor.execute(
+                "ALTER TABLE conciliaciones ADD COLUMN IF NOT EXISTS "
+                "recepcion_empresa_id BIGINT REFERENCES recepciones(id)")
+            cursor.execute(
+                "ALTER TABLE conciliaciones ADD COLUMN IF NOT EXISTS "
+                "recepcion_banco_id BIGINT REFERENCES recepciones(id)")
         conexion.commit()
 
 
