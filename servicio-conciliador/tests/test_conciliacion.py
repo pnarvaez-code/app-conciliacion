@@ -103,6 +103,16 @@ def main():
     else:
         raise AssertionError("el formato corrupto de Excel debio rechazarse")
 
+    try:
+        carga.leer("extracto_comas.csv",
+                   "fecha,monto,referencia,descripcion\n"
+                   "2026-09-01,151000,FV-4001,COBRO\n")
+    except ValueError as error:
+        assert "separador CSV invalido" in str(error)
+        print("Escenario CSV separado por comas: rechazado")
+    else:
+        raise AssertionError("el CSV separado por comas debio rechazarse")
+
     print("Pruebas del motor de conciliacion: todas correctas.")
 
 

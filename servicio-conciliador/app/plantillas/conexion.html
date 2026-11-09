@@ -4,6 +4,9 @@
 <section class="tarjeta">
   <p>La verificación consulta la API interna de PYME y Banco, valida el
   token compartido y muestra el último índice conocido de cada cadena.</p>
+  <form method="post" action="/conexion/verificar">
+    <button type="submit">Verificar y restablecer conexión</button>
+  </form>
   <table>
     <tr><th>Servicio</th><th>Estado</th><th>Detalle</th><th>Índice</th></tr>
     {% for resultado in resultados %}

@@ -41,30 +41,35 @@ def sellar_lote(lote_codigo, archivo, contenido, movimientos, usuario_id):
     `contenido` es el texto del archivo emitido (su huella queda sellada);
     `movimientos` son los movimientos del lote, en orden.
     """
-    ultimo = ultimo_bloque()
     sellado_en = datetime.datetime.now(datetime.timezone.utc)
-    bloque = sellos.construir_bloque(
-        indice=siguiente_indice(),
-        origen=config.ETIQUETA_SERVICIO,
-        lote_codigo=lote_codigo,
-        archivo=archivo,
-        movimientos=movimientos,
-        hash_archivo=sellos.huella_archivo(contenido),
-        hash_anterior=ultimo["hash_bloque"] if ultimo else ("0" * 64),
-        emitido_por=usuario_id,
-        sellado_en=sellado_en.isoformat())
-
-    fila = db.ejecutar(
-        "INSERT INTO bloques (indice, origen, lote_codigo, archivo,"
-        " n_movimientos, hashes_movimientos, hash_raiz, hash_archivo,"
-        " hash_anterior, hash_bloque, emitido_por, sellado_en)"
-        " VALUES (%s, %s, %s, %s, %s, %s::jsonb, %s, %s, %s, %s, %s, %s)"
-        " RETURNING id",
-        (bloque["indice"], bloque["origen"], bloque["lote_codigo"],
-         bloque["archivo"], bloque["n_movimientos"],
-         _json(bloque["hashes_movimientos"]), bloque["hash_raiz"],
-         bloque["hash_archivo"], bloque["hash_anterior"],
-         bloque["hash_bloque"], bloque["emitido_por"], bloque["sellado_en"]))
+    with db.conectar() as conexion:
+        with conexion.cursor() as cursor:
+            cursor.execute("SELECT pg_advisory_xact_lock(781235)")
+            cursor.execute(
+                "SELECT * FROM bloques ORDER BY indice DESC LIMIT 1")
+            ultimo = cursor.fetchone()
+            indice = (ultimo["indice"] + 1) if ultimo else 1
+            bloque = sellos.construir_bloque(
+                indice=indice, origen=config.ETIQUETA_SERVICIO,
+                lote_codigo=lote_codigo, archivo=archivo,
+                movimientos=movimientos,
+                hash_archivo=sellos.huella_archivo(contenido),
+                hash_anterior=ultimo["hash_bloque"] if ultimo else ("0" * 64),
+                emitido_por=usuario_id, sellado_en=sellado_en.isoformat())
+            cursor.execute(
+                "INSERT INTO bloques (indice, origen, lote_codigo, archivo,"
+                " n_movimientos, hashes_movimientos, hash_raiz, hash_archivo,"
+                " hash_anterior, hash_bloque, emitido_por, sellado_en)"
+                " VALUES (%s, %s, %s, %s, %s, %s::jsonb, %s, %s, %s, %s, %s, %s)"
+                " RETURNING id",
+                (bloque["indice"], bloque["origen"], bloque["lote_codigo"],
+                 bloque["archivo"], bloque["n_movimientos"],
+                 _json(bloque["hashes_movimientos"]), bloque["hash_raiz"],
+                 bloque["hash_archivo"], bloque["hash_anterior"],
+                 bloque["hash_bloque"], bloque["emitido_por"],
+                 bloque["sellado_en"]))
+            fila = cursor.fetchone()
+        conexion.commit()
     bloque["id"] = fila["id"]
     propagar(bloque)
     return bloque

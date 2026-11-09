@@ -73,6 +73,17 @@ def aplicar_migracion():
     return True
 
 
+def asegurar_indices():
+    """Crea invariantes de concurrencia también en bases ya existentes."""
+    with conectar() as conexion:
+        with conexion.cursor() as cursor:
+            cursor.execute(
+                "CREATE UNIQUE INDEX IF NOT EXISTS "
+                "uq_movimientos_referencia_no_vacia "
+                "ON movimientos (referencia) WHERE referencia <> ''")
+        conexion.commit()
+
+
 def asegurar_admin():
     """Crea el primer usuario (administrador operador) si no hay ninguno."""
     hay = consultar_uno("SELECT COUNT(*) AS total FROM usuarios")

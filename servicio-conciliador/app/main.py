@@ -160,6 +160,17 @@ async def subir_recepcion(request: Request, origen: str = Form(...),
         aviso = "Recepcion %s: %s" % (recepcion["estado_integridad"],
                                       recepcion["detalle"] or "")
     except ValueError as error:
+        detalle = "Archivo %s rechazado: %s" % (archivo.filename, error)
+        alertas.crear(
+            "integridad", "alta",
+            "Archivo %s de %s rechazado por formato"
+            % (archivo.filename, origen.upper()),
+            detalle, referencia=archivo.filename,
+            usuario_id=usuario["id"])
+        auditoria.registrar(
+            usuario["id"], "recepcion_rechazada", "archivos", None,
+            {"origen": origen.upper(), "archivo": archivo.filename,
+             "motivo": str(error)}, seguridad.ip_de(request))
         aviso = "No se pudo recibir el archivo: %s" % error
     return RedirectResponse("/recepciones?aviso=%s" % aviso.replace(" ", "+"),
                             status_code=303)
@@ -241,6 +252,17 @@ def ver_conexion(request: Request):
     return plantillas.TemplateResponse(request, "conexion.html",
                                        _contexto(request, usuario,
                                                  resultados=resultados))
+
+
+@app.post("/conexion/verificar")
+def verificar_conexion(request: Request):
+    usuario = _exigir_usuario(request)
+    resultados = cadena.sincronizar_con_pares()
+    auditoria.registrar(usuario["id"], "verificar_conexion", "servicios",
+                        None, {"resultados": resultados},
+                        seguridad.ip_de(request))
+    return RedirectResponse("/conexion?aviso=Verificacion+de+conexion+ejecutada",
+                            status_code=303)
 
 
 @app.post("/cadena/sincronizar")

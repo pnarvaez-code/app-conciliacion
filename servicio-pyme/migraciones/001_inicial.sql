@@ -71,6 +71,8 @@ CREATE TABLE IF NOT EXISTS movimientos (
 CREATE INDEX IF NOT EXISTS idx_movimientos_fecha ON movimientos (fecha);
 CREATE INDEX IF NOT EXISTS idx_movimientos_lote ON movimientos (lote_id);
 CREATE INDEX IF NOT EXISTS idx_movimientos_referencia ON movimientos (referencia);
+CREATE UNIQUE INDEX IF NOT EXISTS uq_movimientos_referencia_no_vacia
+    ON movimientos (referencia) WHERE referencia <> '';
 
 
 CREATE TABLE IF NOT EXISTS bloques (

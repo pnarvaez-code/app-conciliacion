@@ -15,11 +15,12 @@ Las referencias que ya existen se omiten, asi que se puede ejecutar mas de
 una vez sin duplicar movimientos.
 """
 import csv
+import json
 import sys
 import xml.etree.ElementTree as ET
 from datetime import datetime
 
-from app import auditoria, db, movimientos
+from app import db
 
 
 MAX_FILAS = 10000
@@ -55,7 +56,7 @@ def _fila(fecha, monto, referencia, descripcion, numero):
 
 
 def leer_texto(texto):
-    """Lee filas separadas por ; o , con cabecera opcional."""
+    """Lee filas separadas por punto y coma con cabecera opcional."""
     filas = []
     lineas = [linea for linea in texto.lstrip("\ufeff").splitlines() if linea.strip()]
     if not lineas:
@@ -63,8 +64,13 @@ def leer_texto(texto):
     primera = lineas[0].lower()
     tiene_cabecera = "fecha" in primera and "monto" in primera
     inicio = 1 if tiene_cabecera else 0
-    delimitador = ";" if lineas[0].count(";") >= lineas[0].count(",") else ","
+    if ";" not in lineas[0] and "," in lineas[0]:
+        raise ValueError("separador CSV invalido: use punto y coma (;), no coma")
+    delimitador = ";"
     for numero, linea in enumerate(lineas[inicio:], start=inicio + 1):
+        if ";" not in linea and "," in linea:
+            raise ValueError("linea %d: separador CSV invalido, use punto y coma (;)"
+                             % numero)
         partes = next(csv.reader([linea], delimiter=delimitador), [])
         if len(partes) < 4:
             raise ValueError("linea %d: se esperan fecha;monto;referencia;descripcion" % numero)
@@ -105,19 +111,37 @@ def leer_archivo(nombre, contenido):
 
 def importar_filas(filas, usuario_id, archivo):
     creados, omitidos = 0, 0
-    for fila in filas:
-        if fila["referencia"]:
-            repetido = db.consultar_uno(
-                "SELECT id FROM movimientos WHERE referencia = %s",
-                (fila["referencia"],))
-            if repetido:
-                omitidos += 1
-                continue
-        movimientos.alta(fila["fecha"], fila["monto"], fila["referencia"],
-                         fila["descripcion"], usuario_id)
-        creados += 1
-    auditoria.registrar(usuario_id, "importar_movimientos", "movimientos", None,
-                        {"archivo": archivo, "creados": creados, "omitidos": omitidos})
+    with db.conectar() as conexion:
+        with conexion.cursor() as cursor:
+            cursor.execute("SELECT pg_advisory_xact_lock(781234)")
+            cursor.execute(
+                "SELECT COALESCE(MAX((substring(referencia from 4))::bigint),"
+                " 4000) AS ultimo FROM movimientos"
+                " WHERE referencia ~ '^FV-[0-9]+$'")
+            siguiente = cursor.fetchone()["ultimo"] + 1
+            for fila in filas:
+                referencia = fila["referencia"]
+                if not referencia:
+                    referencia = "FV-%04d" % siguiente
+                    siguiente += 1
+                cursor.execute(
+                    "INSERT INTO movimientos (fecha, monto, referencia,"
+                    " descripcion, creado_por) VALUES (%s, %s, %s, %s, %s)"
+                    " ON CONFLICT (referencia) WHERE referencia <> ''"
+                    " DO NOTHING RETURNING id",
+                    (fila["fecha"], fila["monto"], referencia,
+                     fila["descripcion"], usuario_id))
+                if cursor.fetchone():
+                    creados += 1
+                else:
+                    omitidos += 1
+            cursor.execute(
+                "INSERT INTO auditoria (usuario_id, accion, entidad, detalle)"
+                " VALUES (%s, %s, %s, %s::jsonb)",
+                (usuario_id, "importar_movimientos", "movimientos",
+                 json.dumps({"archivo": archivo, "creados": creados,
+                             "omitidos": omitidos}, ensure_ascii=False)))
+        conexion.commit()
     return creados, omitidos
 
 

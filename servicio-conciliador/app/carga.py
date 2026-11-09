@@ -25,10 +25,16 @@ def _leer_csv(contenido):
         if not linea:
             continue
         if numero == 1 and linea.lower().startswith("fecha"):
+            if ";" not in linea:
+                raise ValueError("separador CSV invalido: use punto y coma (;), no coma")
             continue
+        if ";" not in linea and "," in linea:
+            raise ValueError("linea %d: separador CSV invalido, use punto y coma (;)"
+                             % numero)
         partes = linea.split(";")
-        if len(partes) < 4:
-            raise ValueError("linea %d del archivo no tiene 4 campos" % numero)
+        if len(partes) != 4:
+            raise ValueError("linea %d del archivo debe tener exactamente 4 campos"
+                             % numero)
         try:
             monto = int(partes[1].strip())
         except ValueError:

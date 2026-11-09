@@ -401,6 +401,16 @@ def ver_conexion(request: Request):
                                                  resultados=resultados))
 
 
+@app.post("/conexion/verificar")
+def verificar_conexion(request: Request):
+    usuario = _exigir_usuario(request)
+    cadena.reintentar_envios()
+    auditoria.registrar(usuario["id"], "verificar_conexion", "servicios",
+                        None, {}, seguridad.ip_de(request))
+    return RedirectResponse("/conexion?aviso=Verificacion+de+conexion+ejecutada",
+                            status_code=303)
+
+
 @app.get("/reporte")
 def descargar_reporte(request: Request):
     usuario = _exigir_usuario(request)

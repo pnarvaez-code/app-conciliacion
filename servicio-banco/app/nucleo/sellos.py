@@ -17,6 +17,7 @@ externas ni cifrado de contenido. Los calculos son:
 La verificacion reproduce los calculos y compara: cadena, archivo y datos.
 """
 import hashlib
+import hmac
 import json
 
 
@@ -92,7 +93,8 @@ def verificar_cadena(bloques):
     problemas = []
     anterior = "0" * 64
     for bloque in sorted(bloques, key=lambda b: b["indice"]):
-        if huella_bloque(bloque) != bloque["hash_bloque"]:
+        if not hmac.compare_digest(huella_bloque(bloque),
+                                   bloque["hash_bloque"]):
             problemas.append("bloque %s: contenido alterado" % bloque["indice"])
         if bloque["hash_anterior"] != anterior:
             problemas.append("bloque %s: rompe el encadenamiento" % bloque["indice"])
@@ -102,7 +104,8 @@ def verificar_cadena(bloques):
 
 def verificar_archivo(bloque, contenido_actual):
     """Chequeo (b): el archivo actual conserva la huella de su emision."""
-    if huella_archivo(contenido_actual) == bloque["hash_archivo"]:
+    if hmac.compare_digest(huella_archivo(contenido_actual),
+                           bloque["hash_archivo"]):
         return None
     return ("el archivo %s fue modificado despues de su emision"
             % bloque["archivo"])
@@ -120,6 +123,6 @@ def verificar_movimientos(bloque, movimientos_actuales):
                          % (len(bloque["hashes_movimientos"]), len(actuales)))
     for posicion, (actual, esperado) in enumerate(
             zip(actuales, bloque["hashes_movimientos"]), start=1):
-        if actual != esperado:
+        if not hmac.compare_digest(actual, esperado):
             problemas.append("movimiento #%d: su huella difiere del sello" % posicion)
     return problemas
