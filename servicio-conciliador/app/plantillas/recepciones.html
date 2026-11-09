@@ -21,7 +21,7 @@
   <h3>Historial de recepciones</h3>
   <table>
     <tr><th>Fecha</th><th>Origen</th><th>Archivo</th><th>Lote</th>
-        <th>Estado</th><th>Detalle</th><th>Subido por</th></tr>
+        <th>Estado</th><th>Detalle</th><th>Subido por</th><th>Acción</th></tr>
     {% for r in recepciones %}
     <tr>
       <td>{{ r.verificado_en }}</td><td>{{ r.origen }}</td>
@@ -31,6 +31,12 @@
           {{ r.estado_integridad }}</span></td>
       <td class="detalle">{{ r.detalle }}</td>
       <td>{{ r.subido_por_email or '' }}</td>
+      <td>
+        <form method="post" action="/recepciones/{{ r.id }}/eliminar"
+              onsubmit="return confirm('¿Eliminar esta recepción duplicada y su archivo recibido?');">
+          <button type="submit" class="peligro">Eliminar</button>
+        </form>
+      </td>
     </tr>
     {% endfor %}
   </table>

@@ -181,6 +181,19 @@ async def subir_recepcion(request: Request, origen: str = Form(...),
                             status_code=303)
 
 
+@app.post("/recepciones/{recepcion_id}/eliminar")
+def eliminar_recepcion(request: Request, recepcion_id: int):
+    usuario = _exigir_usuario(request)
+    try:
+        recepcion = recepciones.eliminar(
+            recepcion_id, usuario["id"], seguridad.ip_de(request))
+        aviso = "Recepcion duplicada eliminada: %s" % recepcion["nombre"]
+    except (ValueError, RuntimeError) as error:
+        aviso = "No se pudo eliminar la recepcion: %s" % error
+    return RedirectResponse("/recepciones?aviso=%s" % aviso.replace(" ", "+"),
+                            status_code=303)
+
+
 # ---------------------------------------------------------- conciliacion
 
 @app.get("/conciliacion", response_class=HTMLResponse)

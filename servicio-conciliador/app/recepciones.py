@@ -67,6 +67,50 @@ def listar(limite=100):
         " ORDER BY r.id DESC LIMIT %s", (limite,))
 
 
+def eliminar(recepcion_id, usuario_id, ip=None):
+    """Elimina una recepción duplicada, sin tocar sellos ni conciliaciones."""
+    recepcion = db.consultar_uno(
+        "SELECT r.id, r.origen, r.lote_codigo, r.estado_integridad,"
+        " a.id AS archivo_id, a.nombre, a.ruta, a.sha256, a.bytes"
+        " FROM recepciones r JOIN archivos a ON a.id = r.archivo_id"
+        " WHERE r.id = %s", (recepcion_id,))
+    if not recepcion:
+        raise ValueError("La recepción no existe.")
+
+    with db.conectar() as conexion:
+        with conexion.cursor() as cursor:
+            cursor.execute("SELECT id FROM recepciones WHERE id = %s FOR UPDATE",
+                           (recepcion_id,))
+            if not cursor.fetchone():
+                raise ValueError("La recepción ya fue eliminada.")
+            cursor.execute("DELETE FROM recepciones WHERE id = %s",
+                           (recepcion_id,))
+            cursor.execute("DELETE FROM archivos WHERE id = %s",
+                           (recepcion["archivo_id"],))
+            cursor.execute("SELECT COUNT(*) AS total FROM archivos WHERE ruta = %s",
+                           (recepcion["ruta"],))
+            ruta_compartida = cursor.fetchone()["total"] > 0
+        conexion.commit()
+
+    ruta = recepcion["ruta"]
+    if not ruta_compartida:
+        try:
+            from pathlib import Path
+            Path(ruta).unlink(missing_ok=True)
+        except OSError as error:
+            raise RuntimeError(
+                "La recepción fue eliminada, pero no se pudo borrar el archivo "
+                "del almacenamiento: %s" % error) from error
+
+    auditoria.registrar(
+        usuario_id, "eliminar_recepcion", "recepciones", recepcion_id,
+        {"origen": recepcion["origen"], "archivo": recepcion["nombre"],
+         "ruta": ruta, "lote": recepcion["lote_codigo"],
+         "estado": recepcion["estado_integridad"],
+         "sha256": recepcion["sha256"], "bytes": recepcion["bytes"]}, ip)
+    return recepcion
+
+
 def ultima_intacta(origen):
     """Ultima recepcion intacta de un origen (la que se usa para conciliar)."""
     return db.consultar_uno(

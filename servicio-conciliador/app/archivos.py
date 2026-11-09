@@ -20,7 +20,7 @@ def guardar(nombre, contenido, usuario_id):
     """Guarda el archivo recibido y registra su fila. Devuelve la fila."""
     carpeta = Path(config.dir_datos()) / "archivos"
     carpeta.mkdir(parents=True, exist_ok=True)
-    marca = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
+    marca = datetime.datetime.now().strftime("%Y%m%d%H%M%S%f")
     ruta = carpeta / ("%s_%s" % (marca, nombre))
     datos = contenido if isinstance(contenido, bytes) else contenido.encode("utf-8")
     with ruta.open("wb") as archivo:
