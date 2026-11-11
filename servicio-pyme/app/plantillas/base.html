@@ -8,12 +8,15 @@
 </head>
 <body>
 <nav class="barra">
-  <a class="marca" href="/" aria-label="Ir al inicio de {{ servicio }}">{{ servicio }}</a>
+  <a class="marca" href="/" aria-label="Ir al inicio de {{ servicio }}">
+    <span class="marca-sello">P</span>
+    <span><strong>{{ servicio }}</strong><small>Operación de ventas</small></span>
+  </a>
   <div class="enlaces-principales" aria-label="Navegación principal">
-    <a href="/" class="{{ 'activo' if request.url.path == '/' else '' }}">Ventas</a>
-    <a href="/lotes" class="{{ 'activo' if request.url.path.startswith('/lotes') else '' }}">Cierres y sellos</a>
-    <a href="/alertas" class="{{ 'activo' if request.url.path.startswith('/alertas') else '' }}">Alertas{% if alertas_nuevas %}<span class="contador">{{ alertas_nuevas }}</span>{% endif %}</a>
-    <a href="/auditoria" class="{{ 'activo' if request.url.path.startswith('/auditoria') else '' }}">Auditoría</a>
+    <a href="/" class="{{ 'activo' if request.url.path == '/' else '' }}"><span>⌂</span> Ventas</a>
+    <a href="/lotes" class="{{ 'activo' if request.url.path.startswith('/lotes') else '' }}"><span>□</span> Cierres y sellos</a>
+    <a href="/alertas" class="{{ 'activo' if request.url.path.startswith('/alertas') else '' }}"><span>!</span> Alertas{% if alertas_nuevas %}<span class="contador">{{ alertas_nuevas }}</span>{% endif %}</a>
+    <a href="/auditoria" class="{{ 'activo' if request.url.path.startswith('/auditoria') else '' }}"><span>◷</span> Auditoría</a>
   </div>
   <div class="enlaces-secundarios">
     <a href="/usuarios" class="{{ 'activo' if request.url.path.startswith('/usuarios') else '' }}">Usuarios</a>

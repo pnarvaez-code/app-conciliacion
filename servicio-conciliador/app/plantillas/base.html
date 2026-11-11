@@ -8,14 +8,17 @@
 </head>
 <body>
 <nav class="barra">
-  <a class="marca" href="/" aria-label="Ir al inicio de {{ servicio }}">{{ servicio }}</a>
+  <a class="marca" href="/" aria-label="Ir al inicio de {{ servicio }}">
+    <span class="marca-sello">C</span>
+    <span><strong>{{ servicio }}</strong><small>Auditoría contable</small></span>
+  </a>
   <div class="enlaces-principales" aria-label="Navegación principal">
-    <a href="/" class="{{ 'activo' if request.url.path == '/' else '' }}">Panel</a>
-    <a href="/recepciones" class="{{ 'activo' if request.url.path.startswith('/recepciones') else '' }}">Recepciones</a>
-    <a href="/conciliacion" class="{{ 'activo' if request.url.path.startswith('/conciliacion') else '' }}">Conciliación</a>
-    <a href="/cadena" class="{{ 'activo' if request.url.path.startswith('/cadena') else '' }}">Cadena</a>
-    <a href="/visor" class="{{ 'activo' if request.url.path.startswith('/visor') else '' }}">Visor</a>
-    <a href="/alertas" class="{{ 'activo' if request.url.path.startswith('/alertas') else '' }}">Alertas{% if alertas_nuevas %}<span class="contador">{{ alertas_nuevas }}</span>{% endif %}</a>
+    <a href="/" class="{{ 'activo' if request.url.path == '/' else '' }}"><span>⌂</span> Panel</a>
+    <a href="/recepciones" class="{{ 'activo' if request.url.path.startswith('/recepciones') else '' }}"><span>↓</span> Recepciones</a>
+    <a href="/conciliacion" class="{{ 'activo' if request.url.path.startswith('/conciliacion') else '' }}"><span>✓</span> Conciliación</a>
+    <a href="/cadena" class="{{ 'activo' if request.url.path.startswith('/cadena') else '' }}"><span>◇</span> Cadena</a>
+    <a href="/visor" class="{{ 'activo' if request.url.path.startswith('/visor') else '' }}"><span>◉</span> Visor</a>
+    <a href="/alertas" class="{{ 'activo' if request.url.path.startswith('/alertas') else '' }}"><span>!</span> Alertas{% if alertas_nuevas %}<span class="contador">{{ alertas_nuevas }}</span>{% endif %}</a>
   </div>
   <div class="enlaces-secundarios">
     <a href="/usuarios" class="{{ 'activo' if request.url.path.startswith('/usuarios') else '' }}">Usuarios</a>
