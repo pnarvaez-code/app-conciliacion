@@ -103,7 +103,7 @@ def ingresar(request: Request, email: str = Form(...), clave: str = Form(...)):
         auditoria.registrar(None, "ingreso_fallido", "usuarios", None,
                             {"email": email}, seguridad.ip_de(request))
         return plantillas.TemplateResponse(
-            "login.html", {"request": request, "error": "Correo o clave incorrectos.",
+            request, "login.html", {"error": "Correo o clave incorrectos.",
                            "servicio": config.NOMBRE_SERVICIO}, status_code=401)
     valor = seguridad.iniciar_sesion(usuario["id"], seguridad.ip_de(request),
                                      request.headers.get("user-agent", ""))

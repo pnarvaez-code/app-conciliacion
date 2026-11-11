@@ -8,7 +8,9 @@ exija sesion, y que la API interna rechace peticiones sin token valido.
 Se ejecuta con:  python -m tests.test_arranque
 """
 from fastapi.testclient import TestClient
+from unittest.mock import patch
 
+import app.main as principal
 from app.main import app
 
 
@@ -20,6 +22,15 @@ def main():
     assert "Correo" in respuesta.text and "Clave" in respuesta.text
     print("GET /login -> 200 con formulario de ingreso")
 
+    # Una contraseña incorrecta debe volver al formulario; nunca producir 500.
+    with patch.object(principal.db, "consultar_uno", return_value=None), \
+         patch.object(principal.auditoria, "registrar"):
+        respuesta = cliente.post("/login", data={"email": "invalido@ejemplo.com",
+                                                  "clave": "incorrecta"})
+    assert respuesta.status_code == 401, respuesta.status_code
+    assert "Correo o clave incorrectos" in respuesta.text
+    print("POST /login invalido -> 401 con mensaje de ingreso")
+
     respuesta = cliente.get("/")
     assert respuesta.status_code == 303
     assert respuesta.headers["location"] == "/login"
@@ -28,6 +39,17 @@ def main():
     for ruta in ("/lotes", "/usuarios", "/alertas", "/auditoria", "/reporte"):
         assert cliente.get(ruta).status_code == 303, ruta
     print("Pantallas protegidas: todas redirigen al ingreso")
+
+    # Un archivo con extensión no permitida se informa al usuario sin excepción.
+    with patch.object(principal, "_exigir_usuario", return_value={"id": 1}), \
+         patch.object(principal.importar, "importar_filas") as importar_filas:
+        respuesta = cliente.post(
+            "/movimientos/importar",
+            files={"archivo": ("movimientos.txt", b"contenido", "text/plain")})
+    assert respuesta.status_code == 303, respuesta.status_code
+    assert "formato+no+soportado" in respuesta.headers["location"]
+    assert not importar_filas.called
+    print("Carga de formato invalido -> aviso sin error interno")
 
     assert cliente.get("/interno/salud").status_code == 401
     assert cliente.get("/interno/salud",
