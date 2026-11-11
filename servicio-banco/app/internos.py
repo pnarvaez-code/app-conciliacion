@@ -30,8 +30,12 @@ def _verificar_token(token):
 def salud(x_servicio_token: str = Header(default="")):
     _verificar_token(x_servicio_token)
     ultimo = cadena.ultimo_bloque()
-    return {"estado": "ok", "servicio": config.NOMBRE_SERVICIO,
-            "ultimo_indice": ultimo["indice"] if ultimo else 0}
+    problemas = cadena.verificar_cadena_local()
+    return {"estado": "ok" if not problemas else "advertencia",
+            "servicio": config.NOMBRE_SERVICIO,
+            "ultimo_indice": ultimo["indice"] if ultimo else 0,
+            "cadena_integra": not problemas,
+            "problemas_cadena": problemas[:3]}
 
 
 @router.post("/bloques")

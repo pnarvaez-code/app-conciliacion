@@ -7,14 +7,17 @@
   XML, archivo de ventas de la empresa en CSV). El sistema calcula su huella
   y la compara con el sello que el emisor dejo en la cadena: si el archivo fue
   tocado en el camino, queda marcado como alterado con el detalle.</p>
-  <form method="post" action="/recepciones" enctype="multipart/form-data" class="linea">
+  <form method="post" action="/recepciones" enctype="multipart/form-data" class="linea" data-carga-archivo>
     <div><label>Origen</label>
       <label class="opcion"><input type="radio" name="origen" value="BANCO" checked> Banco</label>
       <label class="opcion"><input type="radio" name="origen" value="EMPRESA"> Empresa</label>
     </div>
-    <div><label>Archivo</label><input type="file" name="archivo" required></div>
+    <div><label>Archivo CSV o XML (máximo 5 MB)</label><input type="file" name="archivo"
+      accept=".csv,.xml,text/csv,application/xml,text/xml" required></div>
     <div><button type="submit">Recibir y verificar</button></div>
   </form>
+  <p class="tenue">Sincronice la cadena antes de cargar un archivo recién emitido.
+    El envío se bloquea mientras se verifica el archivo.</p>
 </section>
 
 <section class="tarjeta">

@@ -28,7 +28,7 @@
   <p class="tenue">Pegue muchos movimientos, una por linea, o cargue un archivo
   CSV/XML. Formato: <code>fecha;monto;referencia;descripcion</code>. La fecha
   acepta dd/mm/aaaa o aaaa-mm-dd; la referencia es opcional.</p>
-  <form method="post" action="/movimientos/importar" enctype="multipart/form-data">
+  <form method="post" action="/movimientos/importar" enctype="multipart/form-data" data-carga-archivo>
     <label for="texto">Texto de movimientos</label>
     <textarea id="texto" name="texto" rows="6"
       placeholder="01/11/2026;125000;;VENTA TARJETA"></textarea>
@@ -39,7 +39,8 @@
     </div>
   </form>
   <p class="tenue">Use texto o archivo, no ambos. Las referencias repetidas se
-  omiten y cada importacion queda registrada en auditoria.</p>
+  omiten y cada importacion queda registrada en auditoria. El envío se bloquea
+  mientras se procesa para evitar una carga duplicada.</p>
 </section>
 
 <section class="tarjeta">
