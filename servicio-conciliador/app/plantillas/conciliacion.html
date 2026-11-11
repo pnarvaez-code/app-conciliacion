@@ -2,20 +2,24 @@
 {% block contenido %}
 <h2>Conciliacion</h2>
 <section class="tarjeta">
+  {% if puede_ejecutar %}
   <form method="post" action="/conciliacion">
     <button type="submit">Ejecutar conciliacion</button>
   </form>
-  <p class="tenue">Se usan las ultimas recepciones intactas de cada parte: los
+  <p class="tenue">Se usan una sola vez las ultimas recepciones intactas de cada parte: los
   archivos alterados quedan fuera. Los pendientes se clasifican por tipo de
   diferencia para el informe.</p>
+  {% else %}
+  <p class="aviso">La última pareja de archivos ya fue conciliada. Para crear una
+    nueva operación, reciba un archivo nuevo e intacto de Empresa o Banco.</p>
+  {% endif %}
 </section>
 
 {% if conciliaciones %}
 <section class="tarjeta">
   <h3>Operaciones de conciliación guardadas</h3>
-  <p class="tenue">Cada ejecución conserva sus propios pares, diferencias,
-    lotes y archivos fuente. Seleccione una operación para demostrar cada caso
-    sin sobrescribir el historial.</p>
+  <p class="tenue">Cada operación conserva sus pares, diferencias, lotes y
+    archivos fuente. Una misma pareja de archivos no se puede conciliar otra vez.</p>
   <form method="get" action="/conciliacion" class="linea">
     <label for="operacion">Operación a consultar</label>
     <select id="operacion" name="operacion">
@@ -96,7 +100,7 @@
 <section class="tarjeta">
   <h3>Informe de operación #{{ ultima.id }} ({{ ultima.created_at }})</h3>
   <p class="tenue">Esta vista corresponde exclusivamente a los archivos
-    usados en esta ejecución; las siguientes conciliaciones se guardan aparte.</p>
+    usados en esta ejecución.</p>
   <div class="indicadores">
     <div class="indicador"><span>{{ ultima.conciliados }}</span>pares cruzados</div>
     <div class="indicador"><span>{{ ultima.total_empresa }}</span>movimientos empresa</div>

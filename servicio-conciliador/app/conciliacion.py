@@ -23,13 +23,19 @@ from app.nucleo import conciliacion as motor
 
 
 def ejecutar(usuario_id, ip=None):
-    """Concilia las ultimas recepciones intactas. Devuelve la fila creada."""
+    """Concilia una sola vez las ultimas recepciones intactas."""
     empresa = recepciones.ultima_intacta("EMPRESA")
     banco = recepciones.ultima_intacta("BANCO")
     if not empresa or not banco:
         falta = "la empresa" if not empresa else "el banco"
         raise ValueError("Falta un archivo recibido e intacto de %s "
                          "(suba el archivo en Recepciones)." % falta)
+    existente = conciliacion_existente(empresa["id"], banco["id"])
+    if existente:
+        raise ValueError(
+            "Estos dos archivos ya fueron conciliados en la operacion #%d. "
+            "Suba un archivo nuevo de Empresa o Banco para ejecutar otra conciliacion."
+            % existente["id"])
 
     movimientos_empresa, _ = carga.leer(empresa["archivo"],
                                         _contenido(empresa["ruta"]))
@@ -88,6 +94,14 @@ def ejecutar(usuario_id, ip=None):
                          "pendientes": len(pendientes_empresa) + len(pendientes_banco),
                          "detalle": resumen_diferencias}, ip)
     return fila
+
+
+def conciliacion_existente(recepcion_empresa_id, recepcion_banco_id):
+    """Devuelve la operación previa que ya usó exactamente ambas recepciones."""
+    return db.consultar_uno(
+        "SELECT id FROM conciliaciones WHERE recepcion_empresa_id = %s "
+        "AND recepcion_banco_id = %s ORDER BY id DESC LIMIT 1",
+        (recepcion_empresa_id, recepcion_banco_id))
 
 
 def listar(limite=50):

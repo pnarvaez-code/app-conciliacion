@@ -244,11 +244,17 @@ def ver_conciliacion(request: Request):
         rechazos = []
     else:
         filtro = "todos"
+    fuente_empresa = recepciones.ultima_intacta("EMPRESA")
+    fuente_banco = recepciones.ultima_intacta("BANCO")
+    puede_ejecutar = bool(fuente_empresa and fuente_banco and not
+                          conciliacion.conciliacion_existente(
+                              fuente_empresa["id"], fuente_banco["id"]))
     return plantillas.TemplateResponse(request, "conciliacion.html", _contexto(
         request, usuario, conciliaciones=lista, ultima=ultima, pares=pares,
         pendientes=pendientes, por_tipo=por_tipo,
         recepciones=recepciones_recientes[:8], rechazos=rechazos,
-        lotes=lotes, fuentes=fuentes, filtro=filtro))
+        lotes=lotes, fuentes=fuentes, filtro=filtro,
+        puede_ejecutar=puede_ejecutar))
 
 
 @app.post("/conciliacion")
