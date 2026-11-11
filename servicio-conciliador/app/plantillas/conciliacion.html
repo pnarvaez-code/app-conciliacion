@@ -38,9 +38,9 @@
 
 <section class="tarjeta">
   <h3>Cargas recibidas y errores</h3>
-  <p class="tenue">Se conserva la trazabilidad de cada archivo: origen,
-    nombre/ruta reportada, ruta almacenada, estado de integridad, SHA-256,
-    tamaño, motivo y responsable.</p>
+  <p class="tenue">Cada recepción conserva su origen, estado de integridad,
+    huella SHA-256 y responsable. Abra la evidencia técnica cuando necesite
+    revisar la ruta completa o la huella original.</p>
   <form method="get" action="/conciliacion" class="linea filtro-cargas">
     <label for="filtro">Filtrar cargas</label>
     <select id="filtro" name="filtro">
@@ -51,17 +51,16 @@
     </select>
     <button type="submit">Aplicar filtro</button>
   </form>
-  <table>
-    <tr><th>Origen</th><th>Archivo / ruta reportada</th><th>Ruta almacenada</th>
-        <th>Estado</th><th>SHA-256 / tamaño</th><th>Detalle</th></tr>
+  <div class="tabla-responsive">
+  <table class="tabla-cargas">
+    <tr><th>Origen y estado</th><th>Archivo recibido</th>
+        <th>Integridad</th><th>Verificación</th></tr>
     {% for r in recepciones %}
     <tr class="{{ 'fila-ok' if r.estado_integridad == 'intacto' else
                  ('fila-advertencia' if r.estado_integridad == 'sin_sello'
                   else 'fila-diferencia') }}">
-      <td>{{ r.origen }}</td>
-      <td>{{ r.archivo }}<br><small>{{ r.ruta_reportada or r.archivo }}</small></td>
-      <td><small>{{ r.ruta }}</small></td>
       <td>
+        <strong>{{ r.origen }}</strong><br>
         <span class="etiqueta {{ 'baja' if r.estado_integridad == 'intacto'
           else ('media' if r.estado_integridad == 'sin_sello' else 'alta') }}">
           {{ r.estado_integridad }}
@@ -70,14 +69,31 @@
         <strong class="marca-alerta">Archivo modificado o con diferencias</strong>
         {% endif %}
       </td>
-      <td class="detalle">{{ r.sha256 }}<br>{{ r.bytes }} bytes</td>
-      <td class="detalle">{{ r.detalle or '-' }}<br>
-        Responsable: {{ r.subido_por_email or 'sistema' }}</td>
+      <td class="carga-archivo">
+        <strong>{{ r.archivo }}</strong>
+        <small title="{{ r.ruta_reportada or r.archivo }}">Reportado: {{ r.ruta_reportada or r.archivo }}</small>
+      </td>
+      <td class="carga-integridad">
+        <code title="{{ r.sha256 }}">{{ r.sha256 }}</code>
+        <small>{{ r.bytes }} bytes</small>
+      </td>
+      <td class="detalle carga-verificacion">
+        <span>{{ r.detalle or 'Sin observaciones.' }}</span>
+        <small>Responsable: {{ r.subido_por_email or 'sistema' }}</small>
+        <details class="carga-tecnica">
+          <summary>Ver evidencia técnica</summary>
+          <dl>
+            <dt>Ruta almacenada</dt><dd>{{ r.ruta }}</dd>
+            <dt>SHA-256 completo</dt><dd><code>{{ r.sha256 }}</code></dd>
+          </dl>
+        </details>
+      </td>
     </tr>
     {% else %}
-    <tr><td colspan="6" class="tenue">No hay cargas para este filtro.</td></tr>
+    <tr><td colspan="4" class="tenue">No hay cargas para este filtro.</td></tr>
     {% endfor %}
   </table>
+  </div>
   {% if rechazos %}
   <h4>Cargas rechazadas por formato</h4>
   <table>
