@@ -133,7 +133,7 @@ def eliminar(recepcion_id, usuario_id, ip=None):
 def ultima_intacta(origen):
     """Ultima recepcion intacta de un origen (la que se usa para conciliar)."""
     return db.consultar_uno(
-        "SELECT r.*, a.nombre AS archivo, a.ruta, a.sha256"
+        "SELECT r.*, a.nombre AS archivo, a.ruta, a.sha256, a.contenido"
         " FROM recepciones r JOIN archivos a ON a.id = r.archivo_id"
         " WHERE r.origen = %s AND r.estado_integridad = 'intacto'"
         " ORDER BY r.id DESC LIMIT 1", (origen,))

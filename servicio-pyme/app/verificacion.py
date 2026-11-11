@@ -14,9 +14,7 @@ Cuando se ejecuta desde la interfaz, ademas deja auditoria y genera una
 alerta de integridad por cada lote alterado: la deteccion queda con
 responsable y no depende de que alguien mas avise.
 """
-import os
-
-from app import alertas, auditoria, config, db, movimientos
+from app import alertas, archivos, auditoria, config, db, movimientos
 from app.nucleo import sellos
 
 
@@ -33,15 +31,17 @@ def verificar_lotes_propios():
     for lote_codigo, bloque in sorted(vigentes.items(), reverse=True):
         detalle = []
         archivo = db.consultar_uno(
-            "SELECT * FROM archivos WHERE nombre = %s ORDER BY id DESC LIMIT 1",
-            (bloque["archivo"],))
-        if not archivo or not os.path.isfile(archivo["ruta"]):
+            "SELECT * FROM archivos WHERE sha256 = %s ORDER BY id DESC LIMIT 1",
+            (bloque["hash_archivo"],))
+        try:
+            contenido = archivos.obtener_contenido(archivo) if archivo else None
+        except FileNotFoundError:
+            contenido = None
+        if contenido is None:
             estado = "sin_archivo"
-            detalle.append("el archivo emitido no esta en el volumen")
+            detalle.append("el archivo emitido no está disponible en el respaldo")
             sha256_actual = None
         else:
-            with open(archivo["ruta"], "rb") as guardado:
-                contenido = guardado.read()
             sha256_actual = sellos.huella_archivo(contenido)
             problema = sellos.verificar_archivo(bloque, contenido)
             if problema:

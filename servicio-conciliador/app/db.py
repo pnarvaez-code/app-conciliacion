@@ -102,6 +102,15 @@ def asegurar_esquema():
             cursor.execute(
                 "ALTER TABLE conciliaciones ADD COLUMN IF NOT EXISTS "
                 "recepcion_banco_id BIGINT REFERENCES recepciones(id)")
+            cursor.execute("ALTER TABLE archivos ADD COLUMN IF NOT EXISTS contenido BYTEA")
+        conexion.commit()
+
+
+def asegurar_respaldo_archivos():
+    """Añade contenido binario a instalaciones creadas antes de esta versión."""
+    with conectar() as conexion:
+        with conexion.cursor() as cursor:
+            cursor.execute("ALTER TABLE archivos ADD COLUMN IF NOT EXISTS contenido BYTEA")
         conexion.commit()
 
 

@@ -84,6 +84,14 @@ def asegurar_indices():
         conexion.commit()
 
 
+def asegurar_respaldo_archivos():
+    """Añade el respaldo binario a bases creadas antes de esta versión."""
+    with conectar() as conexion:
+        with conexion.cursor() as cursor:
+            cursor.execute("ALTER TABLE archivos ADD COLUMN IF NOT EXISTS contenido BYTEA")
+        conexion.commit()
+
+
 def asegurar_admin():
     """Crea el primer usuario (administrador operador) si no hay ninguno."""
     hay = consultar_uno("SELECT COUNT(*) AS total FROM usuarios")

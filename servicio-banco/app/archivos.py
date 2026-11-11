@@ -25,13 +25,24 @@ def guardar(nombre, contenido, origen, usuario_id):
     with ruta.open("wb") as archivo:
         archivo.write(datos)
     return db.ejecutar(
-        "INSERT INTO archivos (nombre, ruta, sha256, bytes, origen, subido_por)"
-        " VALUES (%s, %s, %s, %s, %s, %s) RETURNING *",
-        (nombre, str(ruta), sellos.huella_archivo(datos), len(datos), origen,
-         usuario_id))
+        "INSERT INTO archivos (nombre, ruta, sha256, bytes, contenido, origen, subido_por)"
+        " VALUES (%s, %s, %s, %s, %s, %s, %s) RETURNING *",
+        (nombre, str(ruta), sellos.huella_archivo(datos), len(datos), datos,
+         origen, usuario_id))
 
 
 def leer(ruta):
     """Contenido del archivo guardado (texto utf-8)."""
     with Path(ruta).open(encoding="utf-8", errors="replace") as archivo:
         return archivo.read()
+
+
+def obtener_contenido(archivo):
+    """Lee el archivo del volumen o, tras un reinicio de Heroku, de PostgreSQL."""
+    ruta = archivo.get("ruta")
+    if ruta and Path(ruta).is_file():
+        return Path(ruta).read_bytes()
+    contenido = archivo.get("contenido")
+    if contenido is not None:
+        return bytes(contenido)
+    raise FileNotFoundError("el archivo no está en el volumen ni en el respaldo")

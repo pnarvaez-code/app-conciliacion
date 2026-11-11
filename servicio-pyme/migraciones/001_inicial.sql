@@ -35,6 +35,7 @@ CREATE TABLE IF NOT EXISTS archivos (
     ruta            TEXT NOT NULL,              -- ubicacion en el volumen
     sha256          CHAR(64) NOT NULL,          -- huella del contenido
     bytes           BIGINT NOT NULL,
+    contenido       BYTEA,                       -- respaldo para volúmenes efímeros
     origen          TEXT NOT NULL CHECK (origen IN ('emitido','recibido')),
     subido_por      BIGINT REFERENCES usuarios(id),
     created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),

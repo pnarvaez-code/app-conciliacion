@@ -284,14 +284,20 @@ def verificar_lotes(request: Request):
 def descargar_lote(request: Request, lote_id: int):
     usuario = _exigir_usuario(request)
     lote = db.consultar_uno(
-        "SELECT l.codigo, a.nombre, a.ruta FROM lotes l"
+        "SELECT l.codigo, a.* FROM lotes l"
         " JOIN archivos a ON a.id = l.archivo_id WHERE l.id = %s", (lote_id,))
     if not lote:
         return RedirectResponse("/lotes?aviso=Lote+sin+archivo", status_code=303)
     auditoria.registrar(usuario["id"], "descargar_lote", "lotes", lote_id,
                         {"archivo": lote["nombre"]}, seguridad.ip_de(request))
-    return FileResponse(lote["ruta"], media_type="text/csv",
-                        filename=lote["nombre"])
+    try:
+        contenido = archivos.obtener_contenido(lote)
+    except FileNotFoundError:
+        return RedirectResponse("/lotes?aviso=Archivo+no+disponible%3B+reemita+el+extracto",
+                                status_code=303)
+    media_type = "application/xml" if lote["nombre"].lower().endswith(".xml") else "text/csv"
+    return Response(content=contenido, media_type=media_type,
+                    headers={"Content-Disposition": "attachment; filename=%s" % lote["nombre"]})
 
 
 # -------------------------------------------------------------- usuarios

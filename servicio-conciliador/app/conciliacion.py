@@ -18,7 +18,7 @@ Los pendientes tambien generan alerta, para que el auditor los vea.
 """
 import json
 
-from app import alertas, auditoria, carga, db, recepciones
+from app import alertas, archivos, auditoria, carga, db, recepciones
 from app.nucleo import conciliacion as motor
 
 
@@ -37,9 +37,8 @@ def ejecutar(usuario_id, ip=None):
             "Suba un archivo nuevo de Empresa o Banco para ejecutar otra conciliacion."
             % existente["id"])
 
-    movimientos_empresa, _ = carga.leer(empresa["archivo"],
-                                        _contenido(empresa["ruta"]))
-    movimientos_banco, _ = carga.leer(banco["archivo"], _contenido(banco["ruta"]))
+    movimientos_empresa, _ = carga.leer(empresa["archivo"], _contenido(empresa))
+    movimientos_banco, _ = carga.leer(banco["archivo"], _contenido(banco))
 
     pares, pendientes_empresa, pendientes_banco = motor.conciliar(
         movimientos_empresa, movimientos_banco)
@@ -158,9 +157,11 @@ def _guardar_pendiente(conciliacion_id, origen, tipo, movimiento, motivo):
         (conciliacion_id, origen, tipo, _json(movimiento), motivo))
 
 
-def _contenido(ruta):
-    with open(ruta, "rb") as archivo:
-        return archivo.read().decode("utf-8", errors="replace")
+def _contenido(archivo):
+    try:
+        return archivos.obtener_contenido(archivo).decode("utf-8", errors="replace")
+    except FileNotFoundError as error:
+        raise ValueError("el archivo recibido ya no está disponible; súbalo nuevamente") from error
 
 
 def _fecha_min(movimientos):

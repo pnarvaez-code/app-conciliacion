@@ -20,6 +20,7 @@ def main():
     else:
         print("La base ya tenia el esquema; no se aplica migracion.")
     db.asegurar_esquema()
+    db.asegurar_respaldo_archivos()
 
     if db.asegurar_admin():
         print("Usuario administrador creado desde ADMIN_EMAIL.")
