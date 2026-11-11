@@ -309,8 +309,7 @@ function pintarBarras(id, values, colors) {
       'class="chart-bar" style="width:' + width + '%;background:' +
       (colors[index % colors.length]) + '"></span></span><b class="chart-value">' +
       item.value + '</b></div>';
-  }).join("") + '</div><div class="chart-axis"><span>0</span><span>' + max +
-    '</span></div>';
+  }).join("") + '</div>';
 }
 function pintarDonut(id, values) {
   var target = document.getElementById(id);
