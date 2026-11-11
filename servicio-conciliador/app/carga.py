@@ -10,13 +10,17 @@ from datetime import date
 import re
 
 CABECERA = "fecha;monto;referencia;descripcion"
+MAX_MOVIMIENTOS = 10000
 
 
 def leer(nombre, contenido):
     """Devuelve (movimientos, formato). Lanza ValueError si no se entiende."""
-    if nombre.lower().endswith(".xml") or contenido.lstrip().startswith("<"):
+    nombre = (nombre or "").lower()
+    if nombre.endswith(".xml"):
         return _leer_xml(contenido), "xml"
-    return _leer_csv(contenido), "csv"
+    if nombre.endswith(".csv"):
+        return _leer_csv(contenido), "csv"
+    raise ValueError("formato no soportado: use un archivo CSV o XML")
 
 
 def _leer_csv(contenido):
@@ -47,6 +51,9 @@ def _leer_csv(contenido):
         movimientos.append({"fecha": fecha, "monto": monto,
                             "referencia": partes[2].strip(),
                             "descripcion": partes[3].strip()})
+        if len(movimientos) > MAX_MOVIMIENTOS:
+            raise ValueError("el archivo supera el maximo de %d movimientos"
+                             % MAX_MOVIMIENTOS)
     if not movimientos:
         raise ValueError("el archivo no tiene movimientos")
     return movimientos
@@ -71,6 +78,9 @@ def _leer_xml(contenido):
                             "monto": monto,
                             "referencia": (nodo.get("referencia") or "").strip(),
                             "descripcion": (nodo.get("descripcion") or "").strip()})
+        if len(movimientos) > MAX_MOVIMIENTOS:
+            raise ValueError("el archivo supera el maximo de %d movimientos"
+                             % MAX_MOVIMIENTOS)
     if not movimientos:
         raise ValueError("el XML no tiene movimientos")
     return movimientos

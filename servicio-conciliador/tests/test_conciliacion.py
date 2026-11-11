@@ -136,6 +136,14 @@ def main():
     else:
         raise AssertionError("el CSV separado por comas debio rechazarse")
 
+    try:
+        carga.leer("archivo.txt", "fecha;monto;referencia;descripcion\n"
+                   "2026-09-01;100;R-1;COBRO\n")
+    except ValueError as error:
+        assert "formato no soportado" in str(error)
+    else:
+        raise AssertionError("una extension no permitida debio rechazarse")
+
     for fecha in ("20260901", "2026-W36-2"):
         try:
             carga.leer("fecha_invalida.csv", "fecha;monto;referencia;descripcion\n"

@@ -3,10 +3,21 @@
 from unittest.mock import patch
 
 from app import recepciones
+from app import archivos
 from app.nucleo import sellos
 
 
 def main():
+    assert archivos._nombre_seguro("../archivo.csv") == "archivo.csv"
+    assert archivos._nombre_seguro(r"C:\cargas\archivo.csv") == "archivo.csv"
+    try:
+        archivos._nombre_seguro("")
+    except ValueError:
+        pass
+    else:
+        raise AssertionError("un nombre vacio debio rechazarse")
+    print("Nombre de archivo: normalizado correctamente")
+
     original = b"fecha;monto;referencia;descripcion\n2026-09-01;100;R-1;VENTA\n"
     alterado = b"fecha;monto;referencia;descripcion\n2026-09-01;999;R-1;VENTA\n"
     sello = {

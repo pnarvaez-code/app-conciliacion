@@ -157,6 +157,10 @@ async def subir_recepcion(request: Request, origen: str = Form(...),
     usuario = _exigir_usuario(request)
     contenido = await archivo.read()
     try:
+        if not archivo.filename:
+            raise ValueError("seleccione un archivo CSV o XML")
+        if len(contenido) > 5 * 1024 * 1024:
+            raise ValueError("el archivo supera el maximo de 5 MB")
         recepcion = recepciones.recibir(origen, archivo.filename, contenido,
                                         usuario["id"], seguridad.ip_de(request))
         aviso = "Recepcion %s: %s" % (recepcion["estado_integridad"],
@@ -178,7 +182,8 @@ async def subir_recepcion(request: Request, origen: str = Form(...),
              "bytes": len(contenido), "motivo": str(error)},
             seguridad.ip_de(request))
         aviso = "No se pudo recibir el archivo: %s" % error
-    return RedirectResponse("/recepciones?aviso=%s" % aviso.replace(" ", "+"),
+    from urllib.parse import quote_plus
+    return RedirectResponse("/recepciones?aviso=%s" % quote_plus(aviso),
                             status_code=303)
 
 

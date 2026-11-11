@@ -18,6 +18,7 @@ from app.nucleo import sellos
 
 def guardar(nombre, contenido, usuario_id):
     """Guarda el archivo recibido y registra su fila. Devuelve la fila."""
+    nombre = _nombre_seguro(nombre)
     carpeta = Path(config.dir_datos()) / "archivos"
     carpeta.mkdir(parents=True, exist_ok=True)
     marca = datetime.datetime.now().strftime("%Y%m%d%H%M%S%f")
@@ -36,3 +37,11 @@ def leer(ruta):
     with Path(ruta).open("rb") as archivo:
         datos = archivo.read()
     return datos.decode("utf-8", errors="replace")
+
+
+def _nombre_seguro(nombre):
+    """Conserva solo el nombre base para que una carga no salga del volumen."""
+    nombre = (nombre or "").replace("\\", "/").rsplit("/", 1)[-1].strip()
+    if not nombre or nombre in (".", ".."):
+        raise ValueError("el archivo debe tener un nombre valido")
+    return nombre
