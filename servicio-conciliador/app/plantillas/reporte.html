@@ -4,13 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Reporte de conciliación</title>
+<link rel="stylesheet" href="/estaticos/estilos.css">
 <style>
   :root { --azul: #153752; --azul-claro: #eaf3f8; --texto: #172b3a; --linea: #d5e0e7; --verde: #147a5d; }
   * { box-sizing: border-box; } body { margin: 0; background: #f4f7f9; color: var(--texto); font-family: Arial, sans-serif; }
-  .reporte-nav { height: 54px; background: var(--azul); display: flex; align-items: center; gap: 8px; padding: 0 22px; }
-  .reporte-nav a { color: #dfeaf1; text-decoration: none; padding: 8px 13px; border-radius: 8px; font-size: 14px; }
-  .reporte-nav a:hover { background: #ffffff18; }.reporte-nav .marca { margin-right: 10px; color: #fff; font-size: 15px; font-weight: 700; padding-left: 0; }
-  .reporte-nav .activo { color: var(--azul); background: #fff; font-weight: 700; }
   .reporte { max-width: 1180px; min-height: calc(100vh - 54px); margin: 0 auto; background: #fff; padding: 34px 42px 56px; box-shadow: 0 0 22px #183a4d12; }
   .acciones { display: flex; gap: 12px; margin-bottom: 20px; }.acciones a, .acciones button { border: 1px solid #b7ccd8; background: #fff; color: #164a6a; padding: 8px 12px; border-radius: 7px; font-size: 13px; text-decoration: none; cursor: pointer; }
   .acciones a.primario { background: var(--azul); color: #fff; border-color: var(--azul); }.kicker { margin: 0 0 4px; color: #547084; font-size: 13px; }
@@ -21,17 +18,24 @@
   table { width: 100%; border-collapse: collapse; margin-top: 14px; font-size: 13px; } th { background: var(--azul); color: #fff; padding: 10px 9px; text-align: left; font-size: 12px; } td { padding: 10px 9px; border-bottom: 1px solid var(--linea); vertical-align: top; } tr:nth-child(even) td { background: #f8fafb; }
   .hash { max-width: 330px; overflow-wrap: anywhere; font: 11px ui-monospace, SFMono-Regular, Menlo, monospace; color: #355a72; }.estado-ok { color: #0c6b50; font-weight: 700; }
   .firma { margin-top: 52px; width: 330px; border-top: 1px solid #263d4d; padding-top: 7px; font-size: 13px; }.pie { margin-top: 38px; padding-top: 12px; border-top: 1px solid var(--linea); color: #708392; font-size: 11px; }
-  @media print { .reporte-nav, .acciones { display: none; } body { background: #fff; }.reporte { max-width: none; box-shadow: none; padding: 0; } @page { size: landscape; margin: 15mm; } }
-  @media (max-width: 720px) { .reporte-nav { overflow-x: auto; padding: 0 12px; }.reporte { padding: 24px 18px; } .reporte-nav .marca { display: none; } table { font-size: 11px; }.hash { max-width: 130px; } }
+  @media print { .barra, .acciones { display: none; } body { background: #fff; }.reporte { max-width: none; box-shadow: none; padding: 0; } @page { size: landscape; margin: 15mm; } }
+  @media (max-width: 720px) { .reporte { padding: 24px 18px; } table { font-size: 11px; }.hash { max-width: 130px; } }
 </style>
 </head>
 <body>
-<nav class="reporte-nav">
-  <a class="marca" href="/">Sistema de conciliación</a>
-  {% if url_pyme %}<a href="{{ url_pyme }}">PYME</a>{% endif %}
-  {% if url_banco %}<a href="{{ url_banco }}">Banco</a>{% endif %}
-  <a class="activo" href="/">Conciliador</a>
+<nav class="barra">
+  <b>CONCILIADOR</b>
+  <a href="/">Panel</a>
+  <a href="/recepciones">Recepciones</a>
+  <a href="/conciliacion">Conciliacion</a>
+  <a href="/cadena">Cadena</a>
   <a href="/visor">Visor</a>
+  <a href="/usuarios">Usuarios</a>
+  <a href="/alertas">Alertas{% if alertas_nuevas %} ({{ alertas_nuevas }}){% endif %}</a>
+  <a href="/auditoria">Auditoria</a>
+  <a href="/conexion">Conexion</a>
+  <a class="boton-reporte" href="/reporte">Reporte</a>
+  <a class="boton-reset" href="/reset">Reset</a>
 </nav>
 <main class="reporte">
   <div class="acciones"><button onclick="window.print()">Imprimir reporte</button><a class="primario" href="/reporte/pdf">Descargar PDF</a><a href="/">Volver a la bandeja</a></div>
