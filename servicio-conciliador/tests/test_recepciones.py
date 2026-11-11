@@ -28,6 +28,22 @@ def main():
     assert archivo["sha256"] != sello["hash_archivo"]
     print("Caso 3: archivo alterado detectado antes de guardar la recepción")
 
+    # Aunque el hash del archivo fuera aceptado indebidamente, los hashes de
+    # movimientos sellados deben coincidir también; de otro modo no se puede
+    # usar esa recepción para conciliar.
+    contenido = b"fecha;monto;referencia;descripcion\n2026-09-01;100;R-1;VENTA\n"
+    sello_inconsistente = dict(sello, hash_archivo=sellos.huella_archivo(contenido),
+                               hashes_movimientos=["0" * 64])
+    archivo_intacto = {"nombre": "inconsistente.csv",
+                       "sha256": sellos.huella_archivo(contenido)}
+    with patch.object(recepciones.cadena, "sellos_de_origen",
+                      return_value=[sello_inconsistente]):
+        estado, lote, detalle = recepciones._verificar(
+            "EMPRESA", archivo_intacto, contenido)
+    assert estado == "alterado" and lote == sello["lote_codigo"]
+    assert "movimientos no coinciden" in detalle
+    print("SHA-256 y huellas de movimientos: verificacion doble correcta")
+
     with patch.object(recepciones.cadena, "sellos_de_origen",
                       return_value=[]), \
             patch.object(recepciones.cadena, "sincronizar_con_pares") as sincronizar:

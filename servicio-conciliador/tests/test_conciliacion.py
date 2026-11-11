@@ -47,8 +47,8 @@ def main():
     print("Prioridad global de referencia: correcto")
 
     # Una referencia igual con datos distintos no es una conciliacion exitosa.
-    empresa = [_movimiento("2026-09-01", 100, "R-2", "VENTA")]
-    banco = [_movimiento("2026-09-01", 999, "R-2", "COBRO")]
+    empresa = [_movimiento("2026-09-01", 100000, "R-2", "VENTA POS")]
+    banco = [_movimiento("2026-09-01", 98000, "R-2", "ABONO POS")]
     pares, pend_e, _ = conciliacion.conciliar(empresa, banco)
     tipo, _ = conciliacion.clasificar_pendiente(pend_e[0], banco)
     assert not pares and tipo == "referencia_distinta"

@@ -52,6 +52,11 @@ def _tokens(texto):
 
 
 def _nivel3(empresa, banco):
+    # Si ambas partes declaran la misma referencia pero los datos no son
+    # idénticos, se trata de una diferencia documental (por ejemplo, una
+    # comisión POS) y nunca debe ocultarse como coincidencia aproximada.
+    if _referencia_igual(empresa, banco):
+        return False
     if not empresa["descripcion"] or not banco["descripcion"]:
         return False
     if not (_tokens(empresa["descripcion"]) & _tokens(banco["descripcion"])):
@@ -90,7 +95,8 @@ def conciliar(empresa, banco):
     _agregar_pares(empresa, banco, usados, con_par, pares, 1,
                    lambda e, b: _referencia_igual(e, b) and e["monto"] == b["monto"])
     _agregar_pares(empresa, banco, usados, con_par, pares, 2,
-                   lambda e, b: e["monto"] == b["monto"] and
+                   lambda e, b: not _referencia_igual(e, b) and
+                   e["monto"] == b["monto"] and
                    _dias(e["fecha"], b["fecha"]) <= 3)
     _agregar_pares(empresa, banco, usados, con_par, pares, 3, _nivel3)
     pendientes_empresa = [m for i, m in enumerate(empresa) if not con_par[i]]

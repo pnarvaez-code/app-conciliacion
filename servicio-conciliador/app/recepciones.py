@@ -148,11 +148,23 @@ def _verificar(origen, archivo, contenido):
                 "La carga se conserva; sincronice Cadena y vuelva a verificar."
                 % origen)
 
-    # 1) Coincidencia exacta con un sello: el archivo llego como se emitio.
+    # 1) La huella SHA-256 debe coincidir con un sello. Como segunda defensa,
+    # se reconstruyen las huellas de cada movimiento del CSV recibido: un
+    # bloque inconsistente nunca se marca como integro aunque su hash de
+    # archivo haya sido propagado.
     for sello in sellos_origen:
         if sellos.compare_hashes(sello["hash_archivo"], archivo["sha256"]):
+            movimientos, _formato = carga.leer(
+                archivo["nombre"], contenido.decode("utf-8", errors="replace"))
+            problemas = sellos.verificar_movimientos(sello, movimientos)
+            if problemas:
+                return (
+                    "alterado", sello["lote_codigo"],
+                    "El SHA-256 del archivo coincide, pero sus movimientos no "
+                    "coinciden con las huellas selladas: %s"
+                    % "; ".join(problemas[:3]))
             return ("intacto", sello["lote_codigo"],
-                    "El archivo coincide con el sello del lote %s emitido el %s."
+                    "SHA-256 verificado contra el sello del lote %s emitido el %s."
                     % (sello["lote_codigo"], sello["sellado_en"]))
 
     # 2) No coincide: se usa el sello mas reciente del origen como referencia
