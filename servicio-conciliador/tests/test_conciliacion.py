@@ -37,6 +37,29 @@ def main():
     assert len(pares) == 1 and pares[0][2] == 3
     print("Nivel 3 (descripcion y monto aproximado): correcto")
 
+    # Los niveles se priorizan globalmente: una coincidencia aproximada no
+    # puede consumir un comprobante que otra fila identifica exactamente.
+    empresa = [_movimiento("2026-09-01", 100, "", "VENTA"),
+               _movimiento("2026-09-01", 100, "R-1", "VENTA")]
+    banco = [_movimiento("2026-09-01", 100, "R-1", "COBRO")]
+    pares, pend_e, _ = conciliacion.conciliar(empresa, banco)
+    assert len(pares) == 1 and pares[0][2] == 1 and pend_e[0]["referencia"] == ""
+    print("Prioridad global de referencia: correcto")
+
+    # Una referencia igual con datos distintos no es una conciliacion exitosa.
+    empresa = [_movimiento("2026-09-01", 100, "R-2", "VENTA")]
+    banco = [_movimiento("2026-09-01", 999, "R-2", "COBRO")]
+    pares, pend_e, _ = conciliacion.conciliar(empresa, banco)
+    tipo, _ = conciliacion.clasificar_pendiente(pend_e[0], banco)
+    assert not pares and tipo == "referencia_distinta"
+    print("Referencia con datos distintos: detectada")
+
+    # El nivel 3 requiere fecha cercana y palabras significativas.
+    empresa = [_movimiento("2026-09-01", 100, "", "PAGO DE VENTA")]
+    banco = [_movimiento("2025-01-01", 99, "", "COMISION DE CUENTA")]
+    assert not conciliacion.conciliar(empresa, banco)[0]
+    print("Nivel 3: evita coincidencias lejanas o genericas")
+
     # Diferencia: en la empresa y no en el banco.
     empresa = [_movimiento("2026-09-01", 812345, "", "VENTA LOCAL")]
     pares, pend_e, pend_b = conciliacion.conciliar(empresa, [])
@@ -112,6 +135,16 @@ def main():
         print("Escenario CSV separado por comas: rechazado")
     else:
         raise AssertionError("el CSV separado por comas debio rechazarse")
+
+    for fecha in ("20260901", "2026-W36-2"):
+        try:
+            carga.leer("fecha_invalida.csv", "fecha;monto;referencia;descripcion\n"
+                       "%s;100;;COBRO\n" % fecha)
+        except ValueError:
+            pass
+        else:
+            raise AssertionError("la fecha invalida debio rechazarse: %s" % fecha)
+    print("Fechas no ISO: rechazadas")
 
     print("Pruebas del motor de conciliacion: todas correctas.")
 

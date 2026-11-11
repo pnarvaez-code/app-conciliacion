@@ -140,7 +140,10 @@ def alta_movimiento(request: Request, fecha: str = Form(""), monto: int = Form(.
     usuario = _exigir_usuario(request)
     if monto <= 0:
         return RedirectResponse("/?aviso=El+monto+debe+ser+positivo", status_code=303)
-    fila = movimientos.alta(fecha, monto, referencia, descripcion, usuario["id"])
+    try:
+        fila = movimientos.alta(fecha, monto, referencia, descripcion, usuario["id"])
+    except ValueError as error:
+        return RedirectResponse("/?aviso=%s" % str(error).replace(" ", "+"), status_code=303)
     auditoria.registrar(usuario["id"], "alta_movimiento", "movimientos", fila["id"],
                         {"monto": monto, "referencia": fila["referencia"]},
                         seguridad.ip_de(request))
@@ -196,7 +199,10 @@ def guardar_movimiento(request: Request, movimiento_id: int, fecha: str = Form(.
     if not fila or fila["estado"] != "pendiente":
         return RedirectResponse("/?aviso=Solo+se+pueden+editar+movimientos+pendientes",
                                 status_code=303)
-    movimientos.actualizar(movimiento_id, fecha, monto, referencia, descripcion)
+    try:
+        movimientos.actualizar(movimiento_id, fecha, monto, referencia, descripcion)
+    except ValueError as error:
+        return RedirectResponse("/?aviso=%s" % str(error).replace(" ", "+"), status_code=303)
     auditoria.registrar(usuario["id"], "editar_movimiento", "movimientos",
                         movimiento_id,
                         {"antes": {"monto": fila["monto"],

@@ -47,7 +47,8 @@ def ejecutar(usuario_id, ip=None):
         (_fecha_min(movimientos_empresa + movimientos_banco),
          _fecha_max(movimientos_empresa + movimientos_banco),
          total_empresa, total_banco, len(pares),
-         round(100.0 * len(pares) / total_empresa) if total_empresa else 0,
+         round(100.0 * len(pares) / max(total_empresa, total_banco))
+         if total_empresa or total_banco else 0,
          empresa["id"], banco["id"], usuario_id))
     conciliacion_id = fila["id"]
 
@@ -60,12 +61,12 @@ def ejecutar(usuario_id, ip=None):
 
     resumen_diferencias = {}
     for movimiento in pendientes_empresa:
-        tipo, motivo = motor.clasificar_pendiente(movimiento, movimientos_banco)
+        tipo, motivo = motor.clasificar_pendiente(movimiento, pendientes_banco)
         tipo = tipo or "en_empresa_no_banco"
         _guardar_pendiente(conciliacion_id, "EMPRESA", tipo, movimiento, motivo)
         resumen_diferencias[tipo] = resumen_diferencias.get(tipo, 0) + 1
     for movimiento in pendientes_banco:
-        tipo, motivo = motor.clasificar_pendiente(movimiento, movimientos_empresa)
+        tipo, motivo = motor.clasificar_pendiente(movimiento, pendientes_empresa)
         tipo = tipo or "en_banco_no_empresa"
         _guardar_pendiente(conciliacion_id, "BANCO", tipo, movimiento, motivo)
         resumen_diferencias[tipo] = resumen_diferencias.get(tipo, 0) + 1

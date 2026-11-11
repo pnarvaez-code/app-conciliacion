@@ -23,6 +23,12 @@ el mejor nivel posible: el sistema nunca inventa coincidencias.
 """
 from datetime import date
 
+
+PALABRAS_NO_SIGNIFICATIVAS = {
+    "A", "AL", "CON", "DE", "DEL", "EL", "EN", "LA", "LAS", "LOS",
+    "PARA", "POR", "UN", "UNA", "Y",
+}
+
 NIVELES = {1: "Referencia exacta", 2: "Monto y fecha cercana",
            3: "Descripcion y monto aproximado"}
 
@@ -41,7 +47,8 @@ def _dias(a, b):
 
 
 def _tokens(texto):
-    return set((texto or "").upper().split())
+    return {palabra for palabra in (texto or "").upper().split()
+            if len(palabra) > 2 and palabra not in PALABRAS_NO_SIGNIFICATIVAS}
 
 
 def _nivel3(empresa, banco):
@@ -49,7 +56,30 @@ def _nivel3(empresa, banco):
         return False
     if not (_tokens(empresa["descripcion"]) & _tokens(banco["descripcion"])):
         return False
-    return abs(empresa["monto"] - banco["monto"]) <= empresa["monto"] * 0.05
+    return (_dias(empresa["fecha"], banco["fecha"]) <= 3 and
+            abs(empresa["monto"] - banco["monto"]) <= abs(empresa["monto"]) * 0.05)
+
+
+def _referencia_igual(empresa, banco):
+    referencia = (empresa.get("referencia") or "").strip().upper()
+    return referencia and referencia == (banco.get("referencia") or "").strip().upper()
+
+
+def _agregar_pares(empresa, banco, usados, con_par, pares, nivel, coincide):
+    """Agrega un nivel completo antes de pasar al siguiente criterio.
+
+    Aplicar todos los cruces por referencia antes de los cruces aproximados
+    evita que el orden de las filas cambie el resultado.
+    """
+    for i, movimiento_empresa in enumerate(empresa):
+        if con_par[i]:
+            continue
+        for j, movimiento_banco in enumerate(banco):
+            if j not in usados and coincide(movimiento_empresa, movimiento_banco):
+                pares.append((movimiento_empresa, movimiento_banco, nivel))
+                usados.add(j)
+                con_par[i] = True
+                break
 
 
 def conciliar(empresa, banco):
@@ -57,33 +87,12 @@ def conciliar(empresa, banco):
     usados = set()
     pares = []
     con_par = [False] * len(empresa)
-    for i, movimiento_empresa in enumerate(empresa):
-        for j, movimiento_banco in enumerate(banco):
-            if j in usados:
-                continue
-            if (movimiento_empresa["referencia"] and
-                    movimiento_empresa["referencia"].upper() ==
-                    movimiento_banco["referencia"].upper()):
-                pares.append((movimiento_empresa, movimiento_banco, 1))
-                usados.add(j); con_par[i] = True
-                break
-        else:
-            for j, movimiento_banco in enumerate(banco):
-                if j in usados:
-                    continue
-                if (movimiento_empresa["monto"] == movimiento_banco["monto"] and
-                        _dias(movimiento_empresa["fecha"], movimiento_banco["fecha"]) <= 3):
-                    pares.append((movimiento_empresa, movimiento_banco, 2))
-                    usados.add(j); con_par[i] = True
-                    break
-            else:
-                for j, movimiento_banco in enumerate(banco):
-                    if j in usados:
-                        continue
-                    if _nivel3(movimiento_empresa, movimiento_banco):
-                        pares.append((movimiento_empresa, movimiento_banco, 3))
-                        usados.add(j); con_par[i] = True
-                        break
+    _agregar_pares(empresa, banco, usados, con_par, pares, 1,
+                   lambda e, b: _referencia_igual(e, b) and e["monto"] == b["monto"])
+    _agregar_pares(empresa, banco, usados, con_par, pares, 2,
+                   lambda e, b: e["monto"] == b["monto"] and
+                   _dias(e["fecha"], b["fecha"]) <= 3)
+    _agregar_pares(empresa, banco, usados, con_par, pares, 3, _nivel3)
     pendientes_empresa = [m for i, m in enumerate(empresa) if not con_par[i]]
     pendientes_banco = [m for j, m in enumerate(banco) if j not in usados]
     return pares, pendientes_empresa, pendientes_banco
@@ -107,11 +116,15 @@ def clasificar_pendiente(movimiento, otros):
     mismo_dia = None
     descripcion_cercana = None
     for otro in otros:
+        if _referencia_igual(movimiento, otro):
+            return ("referencia_distinta",
+                    "la referencia %s coincide, pero el monto o la fecha no cuadran"
+                    % movimiento["referencia"])
         igual = movimiento["monto"] == otro["monto"]
         dias = _dias(movimiento["fecha"], otro["fecha"])
         diferencia = abs(movimiento["monto"] - otro["monto"])
         comunes = _tokens(movimiento["descripcion"]) & _tokens(otro["descripcion"])
-        dentro_pct = diferencia <= movimiento["monto"] * 0.05
+        dentro_pct = diferencia <= abs(movimiento["monto"]) * 0.05
         if igual and dias <= 3:
             return ("referencia_distinta",
                     "hay una contrapartida con el mismo monto y fecha cercana "

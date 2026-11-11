@@ -8,16 +8,20 @@
 </head>
 <body>
 <nav class="barra">
-  <b>{{ servicio }}</b>
-  <a href="/">Ventas</a>
-  <a href="/lotes">Extractos y sellos</a>
-  <a href="/usuarios">Usuarios</a>
-  <a href="/alertas">Alertas{% if alertas_nuevas %} ({{ alertas_nuevas }}){% endif %}</a>
-  <a href="/auditoria">Auditoria</a>
-  <a href="/conexion">Conexion</a>
-  <a class="boton-reporte" href="/reporte">Reporte PDF</a>
-  <a class="boton-reset" href="/reset">Reset</a>
-  <span class="salir"><a href="/salir">Salir ({{ usuario.email }})</a></span>
+  <a class="marca" href="/" aria-label="Ir al inicio de {{ servicio }}">{{ servicio }}</a>
+  <div class="enlaces-principales" aria-label="Navegación principal">
+    <a href="/" class="{{ 'activo' if request.url.path == '/' else '' }}">Movimientos</a>
+    <a href="/lotes" class="{{ 'activo' if request.url.path.startswith('/lotes') else '' }}">Extractos y sellos</a>
+    <a href="/alertas" class="{{ 'activo' if request.url.path.startswith('/alertas') else '' }}">Alertas{% if alertas_nuevas %}<span class="contador">{{ alertas_nuevas }}</span>{% endif %}</a>
+    <a href="/auditoria" class="{{ 'activo' if request.url.path.startswith('/auditoria') else '' }}">Auditoría</a>
+  </div>
+  <div class="enlaces-secundarios">
+    <a href="/usuarios" class="{{ 'activo' if request.url.path.startswith('/usuarios') else '' }}">Usuarios</a>
+    <a href="/conexion" class="{{ 'activo' if request.url.path.startswith('/conexion') else '' }}">Conexión</a>
+    <a class="boton-reporte" href="/reporte">Reporte PDF</a>
+    <a class="boton-reset" href="/reset">Reset</a>
+    <a class="salir" href="/salir">Salir <span>{{ usuario.email }}</span></a>
+  </div>
 </nav>
 <main>
 {% if request.query_params.get('aviso') %}

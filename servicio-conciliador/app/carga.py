@@ -7,6 +7,7 @@ sellos y el motor de conciliacion: fecha, monto, referencia, descripcion.
 """
 import xml.etree.ElementTree as ET
 from datetime import date
+import re
 
 CABECERA = "fecha;monto;referencia;descripcion"
 
@@ -39,6 +40,8 @@ def _leer_csv(contenido):
             monto = int(partes[1].strip())
         except ValueError:
             raise ValueError("linea %d: el monto no es un numero entero" % numero)
+        if monto <= 0:
+            raise ValueError("linea %d: el monto debe ser positivo" % numero)
         fecha = partes[0].strip()
         _validar_fecha(fecha, numero)
         movimientos.append({"fecha": fecha, "monto": monto,
@@ -60,6 +63,8 @@ def _leer_xml(contenido):
             monto = int(nodo.get("monto", ""))
         except ValueError:
             raise ValueError("un movimiento del XML no tiene monto entero")
+        if monto <= 0:
+            raise ValueError("un movimiento del XML debe tener monto positivo")
         fecha = (nodo.get("fecha") or "").strip()
         _validar_fecha(fecha, "XML")
         movimientos.append({"fecha": fecha,
@@ -74,6 +79,8 @@ def _leer_xml(contenido):
 def _validar_fecha(fecha, linea):
     """Rechaza fechas que romperian el motor de conciliacion."""
     try:
+        if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", fecha):
+            raise ValueError
         date.fromisoformat(fecha)
     except ValueError:
         raise ValueError("linea %s: la fecha debe tener formato AAAA-MM-DD"

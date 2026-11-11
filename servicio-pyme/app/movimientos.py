@@ -14,6 +14,23 @@ import datetime
 from app import db
 
 
+def _validar(fecha, monto):
+    try:
+        fecha = (fecha or "").strip()
+        if len(fecha) != 10 or fecha[4] != "-" or fecha[7] != "-":
+            raise ValueError
+        fecha_normalizada = datetime.date.fromisoformat(fecha)
+    except ValueError as error:
+        raise ValueError("La fecha debe tener formato AAAA-MM-DD.") from error
+    try:
+        monto = int(monto)
+    except (TypeError, ValueError) as error:
+        raise ValueError("El monto debe ser un numero entero positivo.") from error
+    if monto <= 0:
+        raise ValueError("El monto debe ser positivo.")
+    return fecha_normalizada.isoformat(), monto
+
+
 def listar(limite=300):
     return db.consultar(
         "SELECT m.*, l.codigo AS lote_codigo FROM movimientos m "
@@ -46,12 +63,13 @@ def alta(fecha, monto, referencia, descripcion, usuario_id):
     """Registra una venta. Devuelve la fila creada."""
     if not fecha:
         fecha = datetime.date.today().isoformat()
+    fecha, monto = _validar(fecha, monto)
     referencia = (referencia or "").strip().upper() or proxima_referencia()
     descripcion = (descripcion or "").strip().upper()
     return db.ejecutar(
         "INSERT INTO movimientos (fecha, monto, referencia, descripcion,"
         " creado_por) VALUES (%s, %s, %s, %s, %s) RETURNING *",
-        (fecha, int(monto), referencia, descripcion, usuario_id))
+        (fecha, monto, referencia, descripcion, usuario_id))
 
 
 def obtener(movimiento_id):
@@ -60,10 +78,11 @@ def obtener(movimiento_id):
 
 
 def actualizar(movimiento_id, fecha, monto, referencia, descripcion):
+    fecha, monto = _validar(fecha, monto)
     db.ejecutar(
         "UPDATE movimientos SET fecha = %s, monto = %s, referencia = %s,"
         " descripcion = %s, updated_at = now() WHERE id = %s",
-        (fecha, int(monto), (referencia or "").strip().upper(),
+        (fecha, monto, (referencia or "").strip().upper(),
          (descripcion or "").strip().upper(), movimiento_id))
 
 
