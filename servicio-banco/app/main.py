@@ -24,7 +24,7 @@ from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse, Resp
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
-from app import (alertas, auditoria, cadena, cierre, config, db, importar,
+from app import (alertas, archivos, auditoria, cadena, cierre, config, db, importar,
                  internos, movimientos, reporte, reset, seguridad, verificacion)
 
 BASE = Path(__file__).resolve().parent

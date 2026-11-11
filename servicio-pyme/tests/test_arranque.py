@@ -51,6 +51,17 @@ def main():
     assert not importar_filas.called
     print("Carga de formato invalido -> aviso sin error interno")
 
+    # La descarga debe usar el respaldo de PostgreSQL si el volumen se perdió.
+    lote_resguardado = {"codigo": "V-2026-11-11-01", "nombre": "ventas.csv",
+                        "ruta": "", "contenido": b"fecha;monto;referencia;descripcion\n"}
+    with patch.object(principal, "_exigir_usuario", return_value={"id": 1}), \
+         patch.object(principal.db, "consultar_uno", return_value=lote_resguardado), \
+         patch.object(principal.auditoria, "registrar"):
+        respuesta = cliente.get("/lotes/1/descargar")
+    assert respuesta.status_code == 200, respuesta.status_code
+    assert respuesta.content == lote_resguardado["contenido"]
+    print("Descarga desde respaldo -> correcta")
+
     assert cliente.get("/interno/salud").status_code == 401
     assert cliente.get("/interno/salud",
                        headers={"X-Servicio-Token": "incorrecto"}).status_code == 401
