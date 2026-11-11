@@ -68,6 +68,13 @@
   .visor-insight { display: flex; align-items: center; gap: 12px; margin: 0 0 20px; padding: 13px 16px; border: 1px solid #dce8ef;
                    border-left: 5px solid #1f6f9d; border-radius: 10px; background: #fff; color: #35536a; font-size: 13px; }
   .visor-insight-icon { display: grid; place-items: center; width: 27px; height: 27px; border-radius: 50%; background: #e7f4fa; color: #17638f; font-weight: 800; }
+  .visor-guide { margin: 0 0 20px; }
+  .visor-guide > p { margin: 0; color: #5b7184; font-size: 13px; }
+  .visor-guide-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin: 14px 0; }
+  .visor-guide-item { padding: 12px 14px; border-radius: 9px; background: #f7f9fc; border: 1px solid #e1e7ef; }
+  .visor-guide-item strong { display: block; margin-bottom: 4px; color: #193b55; font-size: 13px; }
+  .visor-guide-item p { margin: 0; color: #536d80; font-size: 12px; line-height: 1.5; }
+  .visor-guide-action { border-top: 1px solid #e4eaf0; padding-top: 12px; }
   .control-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; margin: 0 0 20px; }
   .control-card { position: relative; overflow: hidden; min-height: 132px; border: 1px solid #dce5ec; border-radius: 12px; padding: 17px 18px; background: #fff; }
   .control-card::before { content: ""; position: absolute; left: 0; top: 0; width: 100%; height: 4px; background: #52748d; }
@@ -134,6 +141,7 @@
     .visor-health-item { min-width: 100px; padding-right: 10px; }
     .visor-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
     .control-grid { grid-template-columns: 1fr; }
+    .visor-guide-grid { grid-template-columns: 1fr; }
     .visor-kpi { padding: 13px; }
     .visor-chart-card, .visor-chart-card.wide { grid-column: span 12; }
     .chart-donut-wrap { justify-content: center; }
@@ -172,6 +180,18 @@
 </section>
 
 <div id="visor-insight" class="visor-insight"><span class="visor-insight-icon">i</span><span>Preparando lectura ejecutiva…</span></div>
+
+<section class="visor-card visor-guide" aria-label="Guía para interpretar el visor">
+  <h3>Cómo interpretar este tablero</h3>
+  <p>Los indicadores se calculan con las cargas y la última conciliación guardada; no son valores estimados.</p>
+  <div class="visor-guide-grid">
+    <article class="visor-guide-item"><strong>Integridad de fuentes</strong><p id="guia-integridad"></p></article>
+    <article class="visor-guide-item"><strong>Cobertura de conciliación</strong><p id="guia-cobertura"></p></article>
+    <article class="visor-guide-item"><strong>Cadena de sellos</strong><p id="guia-cadena"></p></article>
+    <article class="visor-guide-item"><strong>Excepciones operativas</strong><p id="guia-diferencias"></p></article>
+  </div>
+  <p id="guia-accion" class="visor-guide-action"></p>
+</section>
 
 <section class="control-grid" aria-label="Indicadores clave de control">
   <article class="control-card integridad">
@@ -273,7 +293,10 @@ function chartEntries(values) {
 }
 function pintarBarras(id, values, colors) {
   var target = document.getElementById(id);
-  var entries = Array.isArray(values) ? values : chartEntries(values);
+  var entries = Array.isArray(values) ? values.map(function (item) {
+    return { label: item.label || item.etiqueta || "Sin etiqueta",
+      value: Number(item.value || item.valor || 0) };
+  }).filter(function (item) { return item.value > 0; }) : chartEntries(values);
   if (!entries.length) {
     target.innerHTML = '<div class="chart-empty">Sin datos para mostrar todavía</div>';
     return;
@@ -323,6 +346,7 @@ function pintar(datos) {
   var estadisticas = document.getElementById("estadisticas");
   var s = datos.estadisticas || {};
   var avanceEjecutivo = Math.max(0, Math.min(100, Number(s.avance || 0)));
+  var operacion = datos.conciliacion;
   var calidad = s.cargas ? Math.round((s.cargas_intactas || 0) / s.cargas * 100) : 0;
   document.getElementById("kpi-bloques").textContent = datos.cadena.length;
   document.getElementById("kpi-movimientos").textContent = s.movimientos_cadena || 0;
@@ -353,14 +377,39 @@ function pintar(datos) {
   document.getElementById("integridad-fuentes-texto").textContent = fuentesTexto;
   document.getElementById("integridad-fuentes-estado").textContent =
     s.cargas ? (s.cargas_con_error ? "Revisar integridad" : "Hash verificado") : "Sin datos";
-  var hayConciliacionIdeal = datos.conciliacion && avanceEjecutivo === 100 && !s.diferencias;
+  var hayConciliacionIdeal = operacion && avanceEjecutivo === 100 && !s.diferencias;
   document.getElementById("cobertura-texto").textContent = hayConciliacionIdeal
     ? "Resultado verificable: " + s.pares + " pares cruzados sin diferencias."
-    : datos.conciliacion
-      ? s.pares + " pares de " + datos.conciliacion.total + " movimientos; quedan resultados por revisar."
+    : operacion
+      ? s.pares + " pares de " + operacion.total_empresa + " movimientos PYME y " + operacion.total_banco + " del Banco; quedan resultados por revisar."
       : "Ejecute una conciliación para medir la cobertura de los movimientos.";
   document.getElementById("cobertura-estado").textContent = hayConciliacionIdeal
-    ? "Cobertura total · 100 %" : (datos.conciliacion ? avanceEjecutivo + " % conciliado" : "Pendiente");
+    ? "Cobertura total · 100 %" : (operacion ? avanceEjecutivo + " % conciliado" : "Pendiente");
+  var tiposDiferencia = Object.keys(datos.diferencias || {});
+  document.getElementById("guia-integridad").textContent = s.cargas
+    ? "Una carga íntegra conserva el mismo SHA-256 que su sello de origen. Hay " +
+      (s.cargas_intactas || 0) + " de " + s.cargas + " verificadas; las alteradas se excluyen de la conciliación."
+    : "Aún no hay archivos para comparar contra el SHA-256 emitido por la fuente.";
+  document.getElementById("guia-cobertura").textContent = operacion
+    ? "Cada par une un movimiento PYME y uno del Banco. Se lograron " + s.pares +
+      " pares; el " + avanceEjecutivo + " % se calcula sobre el mayor total recibido (" +
+      Math.max(operacion.total_empresa, operacion.total_banco) + " movimientos)."
+    : "Se calculará cuando existan una carga íntegra de PYME, una del Banco y una conciliación ejecutada.";
+  document.getElementById("guia-cadena").textContent = datos.cadena.length
+    ? "Hay " + datos.cadena.length + " bloque(s) sellados con " + (s.movimientos_cadena || 0) +
+      " movimiento(s). Cada bloque enlaza su huella con la del bloque anterior para evidenciar cambios."
+    : "Los bloques aparecerán al recibir lotes sellados desde PYME o Banco.";
+  document.getElementById("guia-diferencias").textContent = s.diferencias
+    ? "Se detectaron " + s.diferencias + " movimiento(s) pendientes: " + tiposDiferencia.join(", ") +
+      ". No son pares aprobados y requieren revisión o un ajuste documentado."
+    : "No existen movimientos pendientes en la conciliación visible.";
+  document.getElementById("guia-accion").textContent = s.cargas_con_error
+    ? "Acción recomendada: no concilie el archivo alterado. Solicite una nueva emisión del origen y verifique nuevamente su SHA-256."
+    : s.diferencias
+      ? "Acción recomendada: revise las diferencias por monto o referencia y documente el ajuste antes de reemitir el lote."
+      : operacion
+        ? "Resultado: la operación visible no presenta excepciones pendientes."
+        : "Siguiente paso: reciba ambos archivos íntegros y ejecute la conciliación.";
   var graficos = datos.graficos || {};
   var hayAnalitica = [
     mostrarGrafico("grafico-integridad", graficos.cargas_por_estado),
@@ -395,9 +444,10 @@ function pintar(datos) {
   barra.style.width = avance + "%";
   barra.textContent = avance + "%";
   document.getElementById("avance-texto").textContent =
-    datos.conciliacion
+    operacion
       ? "Avance: " + s.pares + " pares de " +
-        datos.conciliacion.total + " movimientos PYME."
+        operacion.total_empresa + " movimientos PYME y " + operacion.total_banco +
+        " del Banco; cobertura calculada sobre el mayor total."
       : "Reciba ambos archivos intactos para iniciar la conciliación.";
   document.getElementById("resumen-bootstrap").textContent =
     (s.cargas || 0) + " cargas · " + (s.cargas_intactas || 0) +
@@ -462,13 +512,13 @@ function pintar(datos) {
   });
 
   var c = document.getElementById("conciliacion");
-  if (datos.conciliacion) {
+  if (operacion) {
     var diferencias = Object.keys(datos.diferencias).length
       ? " Diferencias detectadas: " + JSON.stringify(datos.diferencias)
       : " Sin diferencias.";
-    c.textContent = datos.conciliacion.conciliados + " de " +
-      datos.conciliacion.total + " (" + datos.conciliacion.porcentaje +
-      " %)." + diferencias;
+    c.textContent = operacion.conciliados + " par(es) de " +
+      operacion.total_empresa + " movimientos PYME y " + operacion.total_banco +
+      " del Banco (" + avanceEjecutivo + " % de cobertura)." + diferencias;
   } else {
     c.textContent = "Todavia no se ejecuto ninguna conciliacion.";
   }

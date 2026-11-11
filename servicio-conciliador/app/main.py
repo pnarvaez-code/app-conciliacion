@@ -426,7 +426,8 @@ def visor_estado(request: Request):
         "errores_carga": errores_carga[:12],
         "conciliacion": ({"conciliados": lista[0]["conciliados"],
                           "porcentaje": lista[0]["porcentaje"],
-                          "total": lista[0]["total_empresa"]} if lista else None),
+                          "total_empresa": lista[0]["total_empresa"],
+                          "total_banco": lista[0]["total_banco"]} if lista else None),
         "diferencias": por_tipo or {},
         "diferencias_detalle": [{
             "tipo": p["tipo_diferencia"], "origen": p["origen"],
@@ -440,9 +441,9 @@ def visor_estado(request: Request):
             "movimientos_cadena": movimientos_cadena,
             "pares": len(pares or []),
             "diferencias": len(pendientes or []),
-            "avance": (round(100 * len(pares or []) /
-                             lista[0]["total_empresa"])
-                       if lista and lista[0]["total_empresa"] else 0),
+            # El porcentaje guardado usa el mayor total entre ambas fuentes.
+            # Es el único indicador de cobertura que se debe mostrar en el visor.
+            "avance": (int(lista[0]["porcentaje"]) if lista else 0),
         },
         "graficos": {
             "cargas_por_estado": cargas_por_estado,
