@@ -120,8 +120,8 @@
 
 <section class="tarjeta">
   <h3>Pares cruzados ({{ pares|length }})</h3>
-  <p class="tenue">El nivel de cruce indica el criterio utilizado; no corresponde
-    al lote de origen del archivo.</p>
+  <p class="tenue">El criterio de coincidencia explica cómo se relacionaron ambos
+    movimientos. Las fuentes verificadas identifican los archivos y sellos usados.</p>
   {% if por_tipo %}
   <div class="aviso fila-diferencia">
     <strong>Hay diferencias operativas en esta conciliación.</strong>
@@ -132,22 +132,25 @@
   <div class="resumen-lotes">
     {% for origen, etiqueta in [('EMPRESA', 'PYME'), ('BANCO', 'BANCO')] %}
       {% if lotes.get(origen) %}
-      <span class="etiqueta baja">{{ etiqueta }} · Lote {{ lotes[origen].indice }}
-        · {{ lotes[origen].lote_codigo }}</span>
+      <span class="etiqueta baja">{{ etiqueta }} · Bloque {{ lotes[origen].indice }}
+        · Lote {{ lotes[origen].lote_codigo }}</span>
       {% endif %}
     {% endfor %}
   </div>
   <table>
-    <tr><th>Lotes de origen</th><th>Nivel de cruce</th><th>Empresa</th><th>Banco</th></tr>
+    <tr><th>Fuentes verificadas</th><th>Criterio de coincidencia</th>
+        <th>Movimiento de Empresa</th><th>Movimiento de Banco</th></tr>
     {% for p in pares[:50] %}
     <tr class="{{ 'fila-aproximada' if p.nivel == 3 else
                  ('fila-advertencia' if p.nivel == 2 else 'fila-ok') }}">
       <td>
         {% if lotes.get('EMPRESA') %}
-        <small>PYME · Lote {{ lotes['EMPRESA'].indice }}</small><br>
+        <small>PYME · {{ fuentes['EMPRESA'].archivo }}</small><br>
+        <small>Bloque {{ lotes['EMPRESA'].indice }} · Lote {{ lotes['EMPRESA'].lote_codigo }}</small><br>
         {% endif %}
         {% if lotes.get('BANCO') %}
-        <small>BANCO · Lote {{ lotes['BANCO'].indice }}</small>
+        <small>BANCO · {{ fuentes['BANCO'].archivo }}</small><br>
+        <small>Bloque {{ lotes['BANCO'].indice }} · Lote {{ lotes['BANCO'].lote_codigo }}</small>
         {% endif %}
       </td>
       <td>
