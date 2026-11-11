@@ -68,6 +68,14 @@
   .visor-insight { display: flex; align-items: center; gap: 12px; margin: 0 0 20px; padding: 13px 16px; border: 1px solid #dce8ef;
                    border-left: 5px solid #1f6f9d; border-radius: 10px; background: #fff; color: #35536a; font-size: 13px; }
   .visor-insight-icon { display: grid; place-items: center; width: 27px; height: 27px; border-radius: 50%; background: #e7f4fa; color: #17638f; font-weight: 800; }
+  .casos-defensa { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin: 0 0 20px; }
+  .caso-defensa { position: relative; overflow: hidden; min-height: 132px; border: 1px solid #dce5ec; border-radius: 12px; padding: 17px 18px; background: #fff; }
+  .caso-defensa::before { content: ""; position: absolute; left: 0; top: 0; width: 100%; height: 4px; background: #52748d; }
+  .caso-defensa.integridad::before { background: #1b9672; }.caso-defensa.exito::before { background: #2766b2; }.caso-defensa.diferencia::before { background: #d98513; }
+  .caso-kicker { display: block; color: #6a8294; font-size: 10px; font-weight: 800; letter-spacing: .09em; text-transform: uppercase; }
+  .caso-defensa strong { display: block; margin: 7px 0 5px; color: #193b55; font-size: 16px; }.caso-defensa p { margin: 0; color: #567084; font-size: 12px; line-height: 1.45; }
+  .caso-estado { display: inline-block; margin-top: 10px; padding: 3px 8px; border-radius: 999px; background: #eef3f6; color: #466479; font-size: 11px; font-weight: 700; }
+  .caso-defensa.integridad .caso-estado { color: #087154; background: #e5f6ef; }.caso-defensa.exito .caso-estado { color: #145caa; background: #eaf2fd; }.caso-defensa.diferencia .caso-estado { color: #986000; background: #fff3d7; }
   .visor-panels { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(300px, .7fr);
                   gap: 20px; align-items: start; }
   .visor-card { background: #fff; border: 1px solid #e8ecf3; border-radius: 10px;
@@ -125,6 +133,7 @@
     .visor-hero { padding: 22px 19px; }.visor-hero-bottom { align-items: flex-start; flex-direction: column; }
     .visor-health-item { min-width: 100px; padding-right: 10px; }
     .visor-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
+    .casos-defensa { grid-template-columns: 1fr; }
     .visor-kpi { padding: 13px; }
     .visor-chart-card, .visor-chart-card.wide { grid-column: span 12; }
     .chart-donut-wrap { justify-content: center; }
@@ -163,6 +172,27 @@
 </section>
 
 <div id="visor-insight" class="visor-insight"><span class="visor-insight-icon">i</span><span>Preparando lectura ejecutiva…</span></div>
+
+<section class="casos-defensa" aria-label="Evidencia de casos de demostración">
+  <article class="caso-defensa integridad">
+    <span class="caso-kicker">Evidencia criptográfica</span>
+    <strong>SHA-256 y cadena</strong>
+    <p id="caso-integridad-texto">Verificando archivos recibidos contra sus sellos.</p>
+    <span id="caso-integridad-estado" class="caso-estado">Sin datos</span>
+  </article>
+  <article class="caso-defensa exito">
+    <span class="caso-kicker">Caso 1 · flujo ideal</span>
+    <strong>Conciliación 1:1</strong>
+    <p id="caso-exito-texto">Pendiente de una conciliación completa.</p>
+    <span id="caso-exito-estado" class="caso-estado">Pendiente</span>
+  </article>
+  <article class="caso-defensa diferencia">
+    <span class="caso-kicker">Caso 2 · control operativo</span>
+    <strong>Comisiones y diferencias</strong>
+    <p id="caso-diferencia-texto">Sin excepciones registradas en la operación visible.</p>
+    <span id="caso-diferencia-estado" class="caso-estado">Sin excepciones</span>
+  </article>
+</section>
 
 <section class="tarjeta">
   <h3>Estado verificable de los datos</h3>
@@ -317,6 +347,25 @@ function pintar(datos) {
     textoInsight = "Resultado confiable: todos los movimientos recibidos fueron conciliados sin excepciones.";
   }
   insight.lastChild.textContent = textoInsight;
+  var fuentesTexto = (s.cargas_intactas || 0) + " carga(s) íntegra(s) de " +
+    (s.cargas || 0) + " recibida(s).";
+  document.getElementById("caso-integridad-texto").textContent = fuentesTexto;
+  document.getElementById("caso-integridad-estado").textContent =
+    s.cargas ? (s.cargas_con_error ? "Revisar integridad" : "Hash verificado") : "Sin datos";
+  var hayConciliacionIdeal = datos.conciliacion && avanceEjecutivo === 100 && !s.diferencias;
+  document.getElementById("caso-exito-texto").textContent = hayConciliacionIdeal
+    ? "Resultado verificable: " + s.pares + " pares cruzados sin diferencias."
+    : datos.conciliacion
+      ? s.pares + " pares de " + datos.conciliacion.total + " movimientos; quedan resultados por revisar."
+      : "Ejecute el Caso 1 para demostrar el cruce exitoso de punta a punta.";
+  document.getElementById("caso-exito-estado").textContent = hayConciliacionIdeal
+    ? "Caso 1 comprobado · 100 %" : (datos.conciliacion ? avanceEjecutivo + " % conciliado" : "Pendiente");
+  var tiposDiferencia = Object.keys(datos.diferencias || {});
+  document.getElementById("caso-diferencia-texto").textContent = s.diferencias
+    ? s.diferencias + " excepción(es): " + tiposDiferencia.join(", ") + ". La evidencia queda registrada."
+    : "Sin excepciones en la operación visible. Use el Caso 2 para mostrar una comisión POS.";
+  document.getElementById("caso-diferencia-estado").textContent = s.diferencias
+    ? "Caso 2 detectado" : "Sin excepciones";
   var graficos = datos.graficos || {};
   pintarDonut("chart-integridad", graficos.cargas_por_estado);
   pintarBarras("chart-lotes", graficos.movimientos_por_lote || [], chartColors);
