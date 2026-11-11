@@ -20,6 +20,7 @@ import logging
 import os
 from pathlib import Path
 import hashlib
+from datetime import datetime
 
 import httpx
 from fastapi import FastAPI, File, Form, Request, UploadFile
@@ -528,7 +529,20 @@ def ver_auditoria(request: Request):
                                                  registros=auditoria.listar()))
 
 
-@app.get("/reporte")
+@app.get("/reporte", response_class=HTMLResponse)
+def ver_reporte(request: Request):
+    usuario = _exigir_usuario(request)
+    operaciones = conciliacion.listar(limite=1)
+    operacion = operaciones[0] if operaciones else None
+    fuentes = reporte._fuentes_certificadas(operacion["id"] if operacion else None)
+    return plantillas.TemplateResponse(
+        request, "reporte.html", _contexto(
+            request, usuario, operacion=operacion, fuentes=fuentes,
+            generado_en=datetime.now().strftime("%d/%m/%Y %H:%M"),
+            url_pyme=config.url_pyme(), url_banco=config.url_banco()))
+
+
+@app.get("/reporte/pdf")
 def descargar_reporte(request: Request):
     usuario = _exigir_usuario(request)
     auditoria.registrar(usuario["id"], "generar_reporte", "reportes", None,

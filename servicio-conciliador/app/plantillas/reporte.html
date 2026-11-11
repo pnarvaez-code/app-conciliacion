@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Reporte de conciliación</title>
+<style>
+  :root { --azul: #153752; --azul-claro: #eaf3f8; --texto: #172b3a; --linea: #d5e0e7; --verde: #147a5d; }
+  * { box-sizing: border-box; } body { margin: 0; background: #f4f7f9; color: var(--texto); font-family: Arial, sans-serif; }
+  .reporte-nav { height: 54px; background: var(--azul); display: flex; align-items: center; gap: 8px; padding: 0 22px; }
+  .reporte-nav a { color: #dfeaf1; text-decoration: none; padding: 8px 13px; border-radius: 8px; font-size: 14px; }
+  .reporte-nav a:hover { background: #ffffff18; }.reporte-nav .marca { margin-right: 10px; color: #fff; font-size: 15px; font-weight: 700; padding-left: 0; }
+  .reporte-nav .activo { color: var(--azul); background: #fff; font-weight: 700; }
+  .reporte { max-width: 1180px; min-height: calc(100vh - 54px); margin: 0 auto; background: #fff; padding: 34px 42px 56px; box-shadow: 0 0 22px #183a4d12; }
+  .acciones { display: flex; gap: 12px; margin-bottom: 20px; }.acciones a, .acciones button { border: 1px solid #b7ccd8; background: #fff; color: #164a6a; padding: 8px 12px; border-radius: 7px; font-size: 13px; text-decoration: none; cursor: pointer; }
+  .acciones a.primario { background: var(--azul); color: #fff; border-color: var(--azul); }.kicker { margin: 0 0 4px; color: #547084; font-size: 13px; }
+  h1 { margin: 0; color: #123d5b; font-size: 31px; letter-spacing: -.4px; } .fecha { margin: 13px 0 0; color: #62768a; font-size: 13px; }
+  .estado { margin: 22px 0 30px; padding: 16px 18px; border-left: 5px solid var(--verde); border-radius: 8px; background: #eff9f5; }
+  .estado h2 { margin: 0 0 5px; color: #12644f; font-size: 16px; }.estado p { margin: 0; font-size: 14px; }
+  h2 { margin: 30px 0 10px; color: #163f5d; font-size: 19px; }.descripcion { color: #536879; font-size: 14px; line-height: 1.55; }
+  table { width: 100%; border-collapse: collapse; margin-top: 14px; font-size: 13px; } th { background: var(--azul); color: #fff; padding: 10px 9px; text-align: left; font-size: 12px; } td { padding: 10px 9px; border-bottom: 1px solid var(--linea); vertical-align: top; } tr:nth-child(even) td { background: #f8fafb; }
+  .hash { max-width: 330px; overflow-wrap: anywhere; font: 11px ui-monospace, SFMono-Regular, Menlo, monospace; color: #355a72; }.estado-ok { color: #0c6b50; font-weight: 700; }
+  .firma { margin-top: 52px; width: 330px; border-top: 1px solid #263d4d; padding-top: 7px; font-size: 13px; }.pie { margin-top: 38px; padding-top: 12px; border-top: 1px solid var(--linea); color: #708392; font-size: 11px; }
+  @media print { .reporte-nav, .acciones { display: none; } body { background: #fff; }.reporte { max-width: none; box-shadow: none; padding: 0; } @page { size: landscape; margin: 15mm; } }
+  @media (max-width: 720px) { .reporte-nav { overflow-x: auto; padding: 0 12px; }.reporte { padding: 24px 18px; } .reporte-nav .marca { display: none; } table { font-size: 11px; }.hash { max-width: 130px; } }
+</style>
+</head>
+<body>
+<nav class="reporte-nav">
+  <a class="marca" href="/">Sistema de conciliación</a>
+  {% if url_pyme %}<a href="{{ url_pyme }}">PYME</a>{% endif %}
+  {% if url_banco %}<a href="{{ url_banco }}">Banco</a>{% endif %}
+  <a class="activo" href="/">Conciliador</a>
+  <a href="/visor">Visor</a>
+</nav>
+<main class="reporte">
+  <div class="acciones"><button onclick="window.print()">Imprimir reporte</button><a class="primario" href="/reporte/pdf">Descargar PDF</a><a href="/">Volver a la bandeja</a></div>
+  <p class="kicker">Conciliador · Sistema de conciliación con integridad verificable</p>
+  <h1>Reporte de conciliación</h1>
+  <p class="fecha">Generado el {{ generado_en }} · Reporte de auditoría</p>
+  {% if operacion %}
+  <section class="estado"><h2>Conciliación registrada</h2><p>Operación #{{ operacion.id }}: {{ operacion.conciliados }} pares de {{ operacion.total_empresa }} movimientos de Empresa y {{ operacion.total_banco }} de Banco · {{ operacion.porcentaje }} % conciliado.</p></section>
+  {% else %}
+  <section class="estado"><h2>Documento de integridad verificable</h2><p>Todavía no se concilió: abra la pestaña Conciliación cuando existan dos archivos íntegros verificados.</p></section>
+  {% endif %}
+  <section>
+    <h2>2. Certificado de integridad de los datos fuente</h2>
+    <p class="descripcion">Se verificó contra la cadena de sellos que los archivos recibidos conservan la huella de su emisión y que sus movimientos coinciden con las huellas selladas. Todo archivo alterado queda excluido de la conciliación.</p>
+    <table><thead><tr><th>Origen</th><th>Lote</th><th>Archivo</th><th>Sellado</th><th>Mov.</th><th>Hash raíz SHA-256</th><th>Estado</th></tr></thead>
+      <tbody>{% for f in fuentes %}<tr><td>{{ f.origen }}</td><td>{{ f.lote }}</td><td>{{ f.archivo }}</td><td>{{ f.sellado }}</td><td>{{ f.movimientos }}</td><td class="hash">{{ f.hash_raiz }}</td><td class="estado-ok">{{ f.estado }}</td></tr>{% else %}<tr><td colspan="7">Aún no hay archivos fuente íntegros para certificar.</td></tr>{% endfor %}</tbody>
+    </table>
+  </section>
+  <section><h2>3. Firma</h2><div class="firma">Contador / responsable financiero o auditor</div></section>
+  <p class="pie">Este reporte presenta evidencia operativa del Conciliador. Los hashes y estados provienen de la cadena local de sellos.</p>
+</main>
+</body>
+</html>
