@@ -111,6 +111,10 @@ Banco reenvían bloques pendientes al Conciliador y el Conciliador solicita
 bloques faltantes a ambos orígenes. Después de cambiar una Config Var, reinicia
 o redeploya las tres aplicaciones para que los procesos lean la configuración.
 
-## Limite de almacenamiento
+## Almacenamiento y reinicios
 
-Heroku elimina los archivos guardados en el disco temporal cuando reinicia o reemplaza un dyno. Este proyecto guarda alli los archivos de ventas, extractos y recepciones; por eso, este paquete permite desplegarlo para pruebas o demostracion, pero no conserva esos archivos de forma duradera. Antes de usarlo con datos reales, hay que adaptar el almacenamiento de archivos a un servicio persistente (por ejemplo, almacenamiento de objetos compatible con S3). La informacion relacional queda en PostgreSQL.
+Heroku elimina el disco temporal cuando reinicia o reemplaza un dyno. Por ello,
+además de la copia de trabajo, la aplicación guarda cada archivo nuevo como
+respaldo binario en PostgreSQL. La descarga, verificación y conciliación usan
+ese respaldo cuando el archivo ya no está en `/tmp/datos`. Los archivos que se
+hubieran perdido antes de desplegar esta versión deben emitirse nuevamente.

@@ -9,6 +9,7 @@ Se ejecuta con:  python -m tests.test_arranque
 """
 from fastapi.testclient import TestClient
 from unittest.mock import patch
+import psycopg
 
 import app.main as principal
 from app.main import app
@@ -50,6 +51,29 @@ def main():
     assert "formato+no+soportado" in respuesta.headers["location"]
     assert not importar_filas.called
     print("Carga de formato invalido -> aviso sin error interno")
+
+    with patch.object(principal, "_exigir_usuario", return_value={"id": 1}), \
+         patch.object(principal.importar, "importar_filas",
+                      side_effect=psycopg.OperationalError("base no disponible")):
+        respuesta = cliente.post(
+            "/movimientos/importar",
+            files={"archivo": ("ventas.csv",
+                                b"fecha;monto;referencia;descripcion\n2026-11-11;1000;FV-1;VENTA\n",
+                                "text/csv")})
+    assert respuesta.status_code == 303, respuesta.status_code
+    assert "No+se+pudieron+guardar+los+movimientos" in respuesta.headers["location"]
+    print("Error de base durante importacion -> aviso sin error interno")
+
+    with patch.object(principal, "_exigir_usuario", return_value={"id": 1}), \
+         patch.object(principal.importar, "importar_filas", return_value=(1, 0)):
+        respuesta = cliente.post(
+            "/movimientos/importar",
+            files={"archivo": ("ventas.csv",
+                                b"fecha;monto;referencia;descripcion\n2026-11-11;1000;FV-2;VENTA\n",
+                                "text/csv")})
+    assert respuesta.status_code == 303, respuesta.status_code
+    assert "Importados+1+movimientos" in respuesta.headers["location"]
+    print("Importacion valida -> movimiento registrado")
 
     # La descarga debe usar el respaldo de PostgreSQL si el volumen se perdió.
     lote_resguardado = {"codigo": "V-2026-11-11-01", "nombre": "ventas.csv",

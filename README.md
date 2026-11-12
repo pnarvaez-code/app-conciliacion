@@ -55,6 +55,16 @@ por separado y conserva conflictos o errores como alertas de integridad.
 - Para Heroku: tres aplicaciones Heroku y una base Heroku Postgres para cada
   aplicación.
 
+## Despliegues soportados
+
+| Entorno | Archivo o guía |
+|---|---|
+| Docker local / servidor | `docker-compose.yml` y `docker-compose.local.yml` |
+| Imágenes desde GitHub | `docker-compose.images.yml` |
+| Heroku | [HEROKU.md](HEROKU.md) |
+| Render | [RENDER.md](RENDER.md) y `render.yaml` |
+| Coolify | [COOLIFY.md](COOLIFY.md) |
+
 ## Instalación local con Docker Compose
 
 Todos los comandos se ejecutan desde la raíz del repositorio.

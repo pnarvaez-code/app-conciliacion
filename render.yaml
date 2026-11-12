@@ -1,0 +1,85 @@
+services:
+  - type: web
+    name: conciliacion-pyme
+    runtime: docker
+    rootDir: servicio-pyme
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /login
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase: {name: conciliacion-pyme-db, property: connectionString}
+      - key: DB_SCHEMA
+        value: public
+      - key: CLAVE_SESION
+        generateValue: true
+      - key: TOKEN_SERVICIO
+        sync: false
+      - key: ADMIN_EMAIL
+        sync: false
+      - key: ADMIN_CLAVE
+        sync: false
+      - key: COOKIE_SECURE
+        value: "true"
+      - key: URL_CONCILIADOR
+        sync: false
+
+  - type: web
+    name: conciliacion-banco
+    runtime: docker
+    rootDir: servicio-banco
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /login
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase: {name: conciliacion-banco-db, property: connectionString}
+      - key: DB_SCHEMA
+        value: public
+      - key: CLAVE_SESION
+        generateValue: true
+      - key: TOKEN_SERVICIO
+        sync: false
+      - key: ADMIN_EMAIL
+        sync: false
+      - key: ADMIN_CLAVE
+        sync: false
+      - key: COOKIE_SECURE
+        value: "true"
+      - key: URL_CONCILIADOR
+        sync: false
+
+  - type: web
+    name: conciliacion-auditor
+    runtime: docker
+    rootDir: servicio-conciliador
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /login
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase: {name: conciliacion-auditor-db, property: connectionString}
+      - key: DB_SCHEMA
+        value: public
+      - key: CLAVE_SESION
+        generateValue: true
+      - key: TOKEN_SERVICIO
+        sync: false
+      - key: ADMIN_EMAIL
+        sync: false
+      - key: ADMIN_CLAVE
+        sync: false
+      - key: COOKIE_SECURE
+        value: "true"
+      - key: URL_PYME
+        sync: false
+      - key: URL_BANCO
+        sync: false
+
+databases:
+  - name: conciliacion-pyme-db
+    databaseName: pyme
+    user: conciliacion
+  - name: conciliacion-banco-db
+    databaseName: banco
+    user: conciliacion
+  - name: conciliacion-auditor-db
+    databaseName: conciliador
+    user: conciliacion
