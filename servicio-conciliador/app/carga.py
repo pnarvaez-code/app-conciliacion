@@ -6,8 +6,7 @@ del banco). Devuelve los movimientos en el esquema canonico que usan los
 sellos y el motor de conciliacion: fecha, monto, referencia, descripcion.
 """
 import xml.etree.ElementTree as ET
-from datetime import date
-import re
+from datetime import datetime
 
 CABECERA = "fecha;monto;referencia;descripcion"
 MAX_MOVIMIENTOS = 10000
@@ -46,8 +45,7 @@ def _leer_csv(contenido):
             raise ValueError("linea %d: el monto no es un numero entero" % numero)
         if monto <= 0:
             raise ValueError("linea %d: el monto debe ser positivo" % numero)
-        fecha = partes[0].strip()
-        _validar_fecha(fecha, numero)
+        fecha = _normalizar_fecha(partes[0].strip(), numero)
         movimientos.append({"fecha": fecha, "monto": monto,
                             "referencia": partes[2].strip(),
                             "descripcion": partes[3].strip()})
@@ -72,8 +70,7 @@ def _leer_xml(contenido):
             raise ValueError("un movimiento del XML no tiene monto entero")
         if monto <= 0:
             raise ValueError("un movimiento del XML debe tener monto positivo")
-        fecha = (nodo.get("fecha") or "").strip()
-        _validar_fecha(fecha, "XML")
+        fecha = _normalizar_fecha((nodo.get("fecha") or "").strip(), "XML")
         movimientos.append({"fecha": fecha,
                             "monto": monto,
                             "referencia": (nodo.get("referencia") or "").strip(),
@@ -86,12 +83,13 @@ def _leer_xml(contenido):
     return movimientos
 
 
-def _validar_fecha(fecha, linea):
-    """Rechaza fechas que romperian el motor de conciliacion."""
-    try:
-        if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", fecha):
-            raise ValueError
-        date.fromisoformat(fecha)
-    except ValueError:
-        raise ValueError("linea %s: la fecha debe tener formato AAAA-MM-DD"
-                         % linea)
+def _normalizar_fecha(fecha, linea):
+    """Acepta fechas de los emisores y las guarda en ISO para el motor."""
+    valor = (fecha or "").strip()
+    for formato in ("%Y-%m-%d", "%d/%m/%Y", "%d/%m/%y"):
+        try:
+            return datetime.strptime(valor, formato).date().isoformat()
+        except ValueError:
+            pass
+    raise ValueError("linea %s: fecha invalida (use AAAA-MM-DD o DD/MM/AAAA)"
+                     % linea)

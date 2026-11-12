@@ -11,8 +11,8 @@ Se usa la misma funcion de alta que la pantalla, asi que quedan con las
 mismas validaciones, el mismo estado y el registro en auditoria con el
 usuario responsable.
 
-Las referencias que ya existen se omiten, asi que se puede ejecutar mas de
-una vez sin duplicar movimientos.
+Las referencias no vacías que ya existen se omiten. Las referencias vacías se
+conservan para que el conciliador pueda aplicar los cruces por monto y fecha.
 """
 import csv
 import json
@@ -114,16 +114,8 @@ def importar_filas(filas, usuario_id, archivo):
     with db.conectar() as conexion:
         with conexion.cursor() as cursor:
             cursor.execute("SELECT pg_advisory_xact_lock(781234)")
-            cursor.execute(
-                "SELECT COALESCE(MAX((substring(referencia from 4))::bigint),"
-                " 4000) AS ultimo FROM movimientos"
-                " WHERE referencia ~ '^FV-[0-9]+$'")
-            siguiente = cursor.fetchone()["ultimo"] + 1
             for fila in filas:
                 referencia = fila["referencia"]
-                if not referencia:
-                    referencia = "FV-%04d" % siguiente
-                    siguiente += 1
                 cursor.execute(
                     "INSERT INTO movimientos (fecha, monto, referencia,"
                     " descripcion, creado_por) VALUES (%s, %s, %s, %s, %s)"

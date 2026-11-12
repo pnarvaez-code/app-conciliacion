@@ -107,6 +107,20 @@ def main():
     assert [nivel for _, _, nivel in pares] == [1, 2, 3]
     print("Escenario exitoso: niveles 1, 2 y 3 correctos")
 
+    # Los archivos de los emisores pueden traer fecha DD/MM/AAAA y referencias
+    # vacías: se normalizan a ISO y se cruzan por monto y fecha (nivel 2).
+    pyme_sin_referencia = "01/09/2026;250000;;VENTA EFECTIVO\n"
+    banco_sin_referencia = "02/09/2026;250000;;DEPOSITO EFECTIVO\n"
+    caso2_empresa, _ = carga.leer("caso2_pyme_sin_referencia.csv",
+                                  pyme_sin_referencia)
+    caso2_banco, _ = carga.leer("caso2_banco_sin_referencia.csv",
+                                banco_sin_referencia)
+    pares, _, _ = conciliacion.conciliar(caso2_empresa, caso2_banco)
+    assert caso2_empresa[0]["fecha"] == "2026-09-01"
+    assert caso2_banco[0]["fecha"] == "2026-09-02"
+    assert len(pares) == 1 and pares[0][2] == 2
+    print("Caso sin referencia: fecha normalizada y cruce nivel 2 correcto")
+
     bloque = sellos.construir_bloque(
         1, "BANCO", "E-2026-09-01-01", "banco-2026-09-01.csv",
         movimientos_banco, sellos.huella_archivo(extracto),
@@ -152,7 +166,7 @@ def main():
             pass
         else:
             raise AssertionError("la fecha invalida debio rechazarse: %s" % fecha)
-    print("Fechas no ISO: rechazadas")
+    print("Fechas inválidas: rechazadas")
 
     print("Pruebas del motor de conciliacion: todas correctas.")
 

@@ -8,6 +8,9 @@ def main():
     assert filas == [{
         "fecha": "2026-11-01", "monto": 1250000,
         "referencia": "FV-4029", "descripcion": "VENTA TARJETA"}]
+    filas_sin_referencia = leer_texto(
+        "01/11/2026;250000;;VENTA EFECTIVO")
+    assert filas_sin_referencia[0]["referencia"] == ""
     filas = leer_xml(
         '<extracto><movimiento fecha="01/11/2026" monto="900" '
         'descripcion="TRANSFERENCIA"/></extracto>')
