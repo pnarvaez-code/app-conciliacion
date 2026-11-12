@@ -1,0 +1,13 @@
+# Ejecución desde imágenes publicadas por GitHub Actions en GHCR.
+# Uso: docker compose -f docker-compose.yml -f docker-compose.local.yml
+#      -f docker-compose.images.yml up -d
+services:
+  pyme:
+    build: !reset null
+    image: ${IMAGEN_PYME:-ghcr.io/pnarvaez-code/app-conciliacion-pyme:latest}
+  banco:
+    build: !reset null
+    image: ${IMAGEN_BANCO:-ghcr.io/pnarvaez-code/app-conciliacion-banco:latest}
+  conciliador:
+    build: !reset null
+    image: ${IMAGEN_CONCILIADOR:-ghcr.io/pnarvaez-code/app-conciliacion-conciliador:latest}

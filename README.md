@@ -84,6 +84,23 @@ docker compose \
   up -d --build
 ```
 
+## Despliegue desde GitHub con Docker
+
+Cada publicación en la rama `main` construye las imágenes de PYME, Banco y
+Conciliador y las publica en GitHub Container Registry (GHCR). En un servidor
+con Docker, clone el repositorio, copie `.env.example` a `.env` y ejecute:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.local.yml \
+  -f docker-compose.images.yml pull
+docker compose -f docker-compose.yml -f docker-compose.local.yml \
+  -f docker-compose.images.yml up -d
+```
+
+Para actualizar el servidor después de un nuevo `git push`, ejecute los mismos
+dos comandos. Las imágenes se descargan desde `ghcr.io/pnarvaez-code/` y los
+datos permanecen en los volúmenes Docker de PostgreSQL y de cada servicio.
+
 La primera ejecución:
 
 - inicia PostgreSQL;
