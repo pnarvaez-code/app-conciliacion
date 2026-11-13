@@ -15,6 +15,7 @@ Los calculos estan en app/nucleo/sellos.py (SHA-256, solo biblioteca
 estandar). Aqui solo se persiste y se transporta.
 """
 import datetime
+import hmac
 import json
 
 import httpx
@@ -35,43 +36,56 @@ def siguiente_indice():
     return (ultimo["indice"] + 1) if ultimo else 1
 
 
-def sellar_lote(lote_codigo, archivo, contenido, movimientos, usuario_id):
+def sellar_lote(lote_codigo, archivo, contenido, movimientos, usuario_id,
+                cursor=None, propagar_ahora=True):
     """Crea el bloque del lote, lo guarda y lo propaga.
 
     `contenido` es el texto del archivo emitido (su huella queda sellada);
     `movimientos` son los movimientos del lote, en orden.
     """
+    if cursor is None:
+        with db.conectar() as conexion:
+            with conexion.cursor() as cursor_propio:
+                bloque = _insertar_bloque(
+                    cursor_propio, lote_codigo, archivo, contenido,
+                    movimientos, usuario_id)
+            conexion.commit()
+    else:
+        bloque = _insertar_bloque(
+            cursor, lote_codigo, archivo, contenido, movimientos, usuario_id)
+        # El llamador controla el commit; propagar antes expondría un bloque
+        # que todavía puede ser revertido.
+        propagar_ahora = False
+    if propagar_ahora:
+        propagar(bloque)
+    return bloque
+
+
+def _insertar_bloque(cursor, lote_codigo, archivo, contenido, movimientos,
+                     usuario_id):
     sellado_en = datetime.datetime.now(datetime.timezone.utc)
-    with db.conectar() as conexion:
-        with conexion.cursor() as cursor:
-            cursor.execute("SELECT pg_advisory_xact_lock(781235)")
-            cursor.execute(
-                "SELECT * FROM bloques ORDER BY indice DESC LIMIT 1")
-            ultimo = cursor.fetchone()
-            indice = (ultimo["indice"] + 1) if ultimo else 1
-            bloque = sellos.construir_bloque(
-                indice=indice, origen=config.ETIQUETA_SERVICIO,
-                lote_codigo=lote_codigo, archivo=archivo,
-                movimientos=movimientos,
-                hash_archivo=sellos.huella_archivo(contenido),
-                hash_anterior=ultimo["hash_bloque"] if ultimo else ("0" * 64),
-                emitido_por=usuario_id, sellado_en=sellado_en.isoformat())
-            cursor.execute(
-                "INSERT INTO bloques (indice, origen, lote_codigo, archivo,"
-                " n_movimientos, hashes_movimientos, hash_raiz, hash_archivo,"
-                " hash_anterior, hash_bloque, emitido_por, sellado_en)"
-                " VALUES (%s, %s, %s, %s, %s, %s::jsonb, %s, %s, %s, %s, %s, %s)"
-                " RETURNING id",
-                (bloque["indice"], bloque["origen"], bloque["lote_codigo"],
-                 bloque["archivo"], bloque["n_movimientos"],
-                 _json(bloque["hashes_movimientos"]), bloque["hash_raiz"],
-                 bloque["hash_archivo"], bloque["hash_anterior"],
-                 bloque["hash_bloque"], bloque["emitido_por"],
-                 bloque["sellado_en"]))
-            fila = cursor.fetchone()
-        conexion.commit()
-    bloque["id"] = fila["id"]
-    propagar(bloque)
+    cursor.execute("SELECT pg_advisory_xact_lock(781235)")
+    cursor.execute("SELECT * FROM bloques ORDER BY indice DESC LIMIT 1")
+    ultimo = cursor.fetchone()
+    indice = (ultimo["indice"] + 1) if ultimo else 1
+    bloque = sellos.construir_bloque(
+        indice=indice, origen=config.ETIQUETA_SERVICIO,
+        lote_codigo=lote_codigo, archivo=archivo, movimientos=movimientos,
+        hash_archivo=sellos.huella_archivo(contenido),
+        hash_anterior=ultimo["hash_bloque"] if ultimo else ("0" * 64),
+        emitido_por=usuario_id, sellado_en=sellado_en.isoformat())
+    cursor.execute(
+        "INSERT INTO bloques (indice, origen, lote_codigo, archivo,"
+        " n_movimientos, hashes_movimientos, hash_raiz, hash_archivo,"
+        " hash_anterior, hash_bloque, emitido_por, sellado_en)"
+        " VALUES (%s, %s, %s, %s, %s, %s::jsonb, %s, %s, %s, %s, %s, %s)"
+        " RETURNING id",
+        (bloque["indice"], bloque["origen"], bloque["lote_codigo"],
+         bloque["archivo"], bloque["n_movimientos"],
+         _json(bloque["hashes_movimientos"]), bloque["hash_raiz"],
+         bloque["hash_archivo"], bloque["hash_anterior"],
+         bloque["hash_bloque"], bloque["emitido_por"], bloque["sellado_en"]))
+    bloque["id"] = cursor.fetchone()["id"]
     return bloque
 
 
@@ -106,6 +120,20 @@ def registrar_bloque_recibido(bloque_recibido):
       conflicto: no encadena con la copia local (posible manipulacion o
                  desincronizacion): se registra una alerta de integridad.
     """
+    if bloque_recibido.get("origen") != config.ETIQUETA_SERVICIO:
+        return {"aceptado": False, "motivo": "origen de bloque no permitido"}
+    try:
+        huella_calculada = sellos.huella_bloque(bloque_recibido)
+        huella_recibida = bloque_recibido["hash_bloque"]
+    except (KeyError, TypeError, ValueError):
+        return {"aceptado": False, "motivo": "estructura de bloque invalida"}
+    if not isinstance(huella_recibida, str) or not hmac.compare_digest(
+            huella_calculada, huella_recibida):
+        return {"aceptado": False, "motivo": "huella del bloque invalida"}
+    problema = sellos.problema_bloque(bloque_recibido)
+    if problema:
+        return {"aceptado": False, "motivo": problema}
+
     existente = db.consultar_uno("SELECT hash_bloque FROM bloques WHERE indice = %s",
                                  (bloque_recibido["indice"],))
     if existente:

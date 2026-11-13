@@ -55,7 +55,7 @@ def _nivel3(empresa, banco):
     # Si ambas partes declaran la misma referencia pero los datos no son
     # idénticos, se trata de una diferencia documental (por ejemplo, una
     # comisión POS) y nunca debe ocultarse como coincidencia aproximada.
-    if _referencia_igual(empresa, banco):
+    if not _referencias_aproximables(empresa, banco):
         return False
     if not empresa["descripcion"] or not banco["descripcion"]:
         return False
@@ -68,6 +68,16 @@ def _nivel3(empresa, banco):
 def _referencia_igual(empresa, banco):
     referencia = (empresa.get("referencia") or "").strip().upper()
     return referencia and referencia == (banco.get("referencia") or "").strip().upper()
+
+
+def _referencias_aproximables(empresa, banco):
+    """Los cruces aproximados cubren datos sin referencia, no comprobantes
+    distintos. Si ambos lados informan códigos diferentes, deben quedar como
+    diferencia documental para revisión humana.
+    """
+    referencia_empresa = (empresa.get("referencia") or "").strip()
+    referencia_banco = (banco.get("referencia") or "").strip()
+    return not referencia_empresa or not referencia_banco
 
 
 def _agregar_pares(empresa, banco, usados, con_par, pares, nivel, coincide):
@@ -95,7 +105,7 @@ def conciliar(empresa, banco):
     _agregar_pares(empresa, banco, usados, con_par, pares, 1,
                    lambda e, b: _referencia_igual(e, b) and e["monto"] == b["monto"])
     _agregar_pares(empresa, banco, usados, con_par, pares, 2,
-                   lambda e, b: not _referencia_igual(e, b) and
+                   lambda e, b: _referencias_aproximables(e, b) and
                    e["monto"] == b["monto"] and
                    _dias(e["fecha"], b["fecha"]) <= 3)
     _agregar_pares(empresa, banco, usados, con_par, pares, 3, _nivel3)

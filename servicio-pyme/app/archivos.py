@@ -10,25 +10,34 @@ alguien modifica el archivo en disco, la verificacion lo detecta.
 """
 import datetime
 from pathlib import Path
+import uuid
 
 from app import config, db
 from app.nucleo import sellos
 
 
-def guardar(nombre, contenido, origen, usuario_id):
+def guardar(nombre, contenido, origen, usuario_id, cursor=None):
     """Guarda el archivo en el volumen y registra su fila. Devuelve la fila."""
     carpeta = Path(config.dir_datos()) / "archivos"
     carpeta.mkdir(parents=True, exist_ok=True)
-    marca = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
-    ruta = carpeta / ("%s_%s" % (marca, nombre))
+    marca = datetime.datetime.now().strftime("%Y%m%d%H%M%S%f")
+    ruta = carpeta / ("%s_%s_%s" % (marca, uuid.uuid4().hex[:8], nombre))
     datos = contenido.encode("utf-8") if isinstance(contenido, str) else contenido
     with ruta.open("wb") as archivo:
         archivo.write(datos)
-    return db.ejecutar(
+    sentencia = (
         "INSERT INTO archivos (nombre, ruta, sha256, bytes, contenido, origen, subido_por)"
-        " VALUES (%s, %s, %s, %s, %s, %s, %s) RETURNING *",
-        (nombre, str(ruta), sellos.huella_archivo(datos), len(datos), datos,
-         origen, usuario_id))
+        " VALUES (%s, %s, %s, %s, %s, %s, %s) RETURNING *")
+    parametros = (nombre, str(ruta), sellos.huella_archivo(datos), len(datos),
+                  datos, origen, usuario_id)
+    try:
+        if cursor is None:
+            return db.ejecutar(sentencia, parametros)
+        cursor.execute(sentencia, parametros)
+        return cursor.fetchone()
+    except Exception:
+        ruta.unlink(missing_ok=True)
+        raise
 
 
 def leer(ruta):

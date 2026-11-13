@@ -106,6 +106,18 @@ def registrar_bloque_recibido(bloque_recibido):
       conflicto: no encadena con la copia local (posible manipulacion o
                  desincronizacion): se registra una alerta de integridad.
     """
+    if bloque_recibido.get("origen") != config.ETIQUETA_SERVICIO:
+        return {"aceptado": False, "motivo": "origen de bloque no permitido"}
+    try:
+        huella_calculada = sellos.huella_bloque(bloque_recibido)
+    except (KeyError, TypeError, ValueError):
+        return {"aceptado": False, "motivo": "contenido de bloque invalido"}
+    if huella_calculada != bloque_recibido.get("hash_bloque"):
+        return {"aceptado": False, "motivo": "huella del bloque invalida"}
+    problema = sellos.problema_bloque(bloque_recibido)
+    if problema:
+        return {"aceptado": False, "motivo": problema}
+
     existente = db.consultar_uno("SELECT hash_bloque FROM bloques WHERE indice = %s",
                                  (bloque_recibido["indice"],))
     if existente:

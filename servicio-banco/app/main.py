@@ -124,7 +124,7 @@ def alta_movimiento(request: Request, fecha: str = Form(""), monto: int = Form(.
     auditoria.registrar(usuario["id"], "alta_movimiento", "movimientos", fila["id"],
                         {"monto": monto, "referencia": fila["referencia"]},
                         seguridad.ip_de(request))
-    return RedirectResponse("/?aviso=Venta+registrada", status_code=303)
+    return RedirectResponse("/?aviso=Movimiento+registrado", status_code=303)
 
 
 @app.post("/movimientos/importar")
@@ -136,9 +136,7 @@ async def importar_movimientos(request: Request, texto: str = Form(""),
             "/?aviso=Use+texto+o+archivo%2C+no+ambos", status_code=303)
     try:
         if archivo and archivo.filename:
-            contenido = await archivo.read()
-            if len(contenido) > 5 * 1024 * 1024:
-                raise ValueError("el archivo supera el maximo de 5 MB")
+            contenido = await seguridad.leer_archivo_limitado(archivo)
             filas = importar.leer_archivo(
                 archivo.filename, contenido.decode("utf-8-sig"))
             origen = archivo.filename
@@ -319,6 +317,10 @@ def alta_usuario(request: Request, email: str = Form(...), nombre: str = Form(..
 def cambiar_estado_usuario(request: Request, usuario_id: int,
                            activo: int = Form(...)):
     usuario = _exigir_usuario(request)
+    if usuario_id == usuario["id"] and not bool(activo):
+        return RedirectResponse(
+            "/usuarios?aviso=No+puede+desactivar+su+propio+usuario",
+            status_code=303)
     db.ejecutar("UPDATE usuarios SET activo = %s, updated_at = now() WHERE id = %s",
                 (bool(activo), usuario_id))
     auditoria.registrar(usuario["id"],

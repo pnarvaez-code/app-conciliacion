@@ -7,6 +7,8 @@ Se verifica que los calculos sean estables y que las tres verificaciones
 detecten lo que deben detectar. Se ejecutan con:  python -m tests.test_sellos
 """
 from app.nucleo import sellos
+from app import cadena
+from unittest.mock import patch
 
 MOVIMIENTOS = [
     {"fecha": "2026-09-01", "monto": 151000, "referencia": "FV-4001",
@@ -47,6 +49,17 @@ def main():
     # (c) Si se elimina un movimiento, se detecta la cantidad distinta.
     problemas = sellos.verificar_movimientos(bloque, MOVIMIENTOS[:1])
     assert problemas and "cantidad distinta" in problemas[0], problemas
+
+    bloque_banco = sellos.construir_bloque(
+        indice=1, origen="BANCO", lote_codigo="E-2026-09-01-01",
+        archivo="banco.csv", movimientos=MOVIMIENTOS,
+        hash_archivo=sellos.huella_archivo("contenido"), hash_anterior=None,
+        emitido_por=1, sellado_en="2026-09-01T20:00:00Z")
+    bloque_adulterado = dict(bloque_banco, hash_bloque="0" * 64)
+    with patch.object(cadena.db, "consultar_uno") as consultar:
+        resultado = cadena.registrar_bloque_recibido(bloque_adulterado)
+    assert not resultado["aceptado"] and "huella" in resultado["motivo"]
+    consultar.assert_not_called()
 
     print("Pruebas del nucleo de sellos: todas correctas.")
 

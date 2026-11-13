@@ -86,6 +86,15 @@ def main():
     assert respuesta.content == lote_resguardado["contenido"]
     print("Descarga desde respaldo -> correcta")
 
+    # Ningun usuario puede bloquear su propia cuenta activa por accidente.
+    with patch.object(principal, "_exigir_usuario", return_value={"id": 7}), \
+         patch.object(principal.db, "ejecutar") as ejecutar:
+        respuesta = cliente.post("/usuarios/7/estado", data={"activo": 0})
+    assert respuesta.status_code == 303
+    assert "No+puede+desactivar" in respuesta.headers["location"]
+    ejecutar.assert_not_called()
+    print("Autodesactivacion de usuario -> rechazada")
+
     assert cliente.get("/interno/salud").status_code == 401
     assert cliente.get("/interno/salud",
                        headers={"X-Servicio-Token": "incorrecto"}).status_code == 401

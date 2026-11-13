@@ -16,5 +16,5 @@ RUN --mount=type=secret,id=proxy_ca,required=false \
 
 COPY . .
 
-EXPOSE 8000
-CMD ["sh", "-c", "python -m app.inicio && uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000} --proxy-headers --forwarded-allow-ips='*'"]
+EXPOSE 8002
+CMD ["sh", "-c", "python -m app.inicio && exec uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8002} --proxy-headers --forwarded-allow-ips='*'"]

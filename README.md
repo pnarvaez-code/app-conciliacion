@@ -38,6 +38,10 @@ La plataforma está preparada para una demostración de conciliación auditable:
   genera evidencia para Auditoría/Alertas y queda excluido de la conciliación.
 - Una pareja de archivos ya conciliada no puede procesarse otra vez como si
   fuera una conciliación nueva.
+- Dos referencias no vacías y diferentes nunca se fuerzan como un cruce
+  aproximado: quedan como diferencia documental para revisión.
+- El cierre, sellado y registro de cada conciliación se confirman en una sola
+  transacción; un error intermedio no deja lotes u operaciones incompletas.
 
 Los errores de formato, credenciales incorrectas y fallas temporales de base
 de datos se muestran como mensajes controlados en la interfaz; no deben
@@ -311,7 +315,7 @@ La batería local validó los seis CSV suministrados para la prueba:
 |---|---:|---|
 | 1 | 590 de 590 | 100 % por referencia exacta. |
 | 2 | 590 de 590 | 413 pares de nivel 1 y 177 pares sin referencia de nivel 2. |
-| 3 | 481 pares | 218 pendientes: diferencias de referencia, monto, fecha y existencia. |
+| 3 | 417 pares | 346 pendientes: 268 diferencias de referencia, 73 de ventana de fecha y 5 de monto. |
 
 Estos resultados describen el motor de conciliación con los datos entregados.
 El caso 3 representa diferencias operativas genuinas; solo un archivo que

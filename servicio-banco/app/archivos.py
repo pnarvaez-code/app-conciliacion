@@ -19,7 +19,9 @@ def guardar(nombre, contenido, origen, usuario_id):
     """Guarda el archivo en el volumen y registra su fila. Devuelve la fila."""
     carpeta = Path(config.dir_datos()) / "archivos"
     carpeta.mkdir(parents=True, exist_ok=True)
-    marca = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
+    # Los microsegundos evitan que dos emisiones del mismo nombre, creadas en
+    # el mismo segundo, compartan ruta y sobrescriban su evidencia local.
+    marca = datetime.datetime.now().strftime("%Y%m%d%H%M%S%f")
     ruta = carpeta / ("%s_%s" % (marca, nombre))
     datos = contenido.encode("utf-8") if isinstance(contenido, str) else contenido
     with ruta.open("wb") as archivo:

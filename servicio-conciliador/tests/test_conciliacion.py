@@ -54,6 +54,14 @@ def main():
     assert not pares and tipo == "referencia_distinta"
     print("Referencia con datos distintos: detectada")
 
+    # Referencias no vacías y distintas nunca deben ocultarse mediante los
+    # niveles aproximados, aunque monto, fecha o descripción se parezcan.
+    empresa = [_movimiento("2026-09-01", 100000, "FV-10", "VENTA POS")]
+    banco = [_movimiento("2026-09-01", 100000, "OP-99", "VENTA POS")]
+    pares, pend_e, pend_b = conciliacion.conciliar(empresa, banco)
+    assert not pares and pend_e and pend_b
+    print("Referencias distintas: excluidas de cruces aproximados")
+
     # El nivel 3 requiere fecha cercana y palabras significativas.
     empresa = [_movimiento("2026-09-01", 100, "", "PAGO DE VENTA")]
     banco = [_movimiento("2025-01-01", 99, "", "COMISION DE CUENTA")]
@@ -120,6 +128,17 @@ def main():
     assert caso2_banco[0]["fecha"] == "2026-09-02"
     assert len(pares) == 1 and pares[0][2] == 2
     print("Caso sin referencia: fecha normalizada y cruce nivel 2 correcto")
+
+    # Los emisores usan CSV estándar: separadores y saltos dentro de un campo
+    # viajan entre comillas y deben conservarse al recibir el archivo.
+    csv_citado = ('fecha;monto;referencia;descripcion\n'
+                  '2026-09-01;100;"R;1";"VENTA; LOCAL"\n'
+                  '2026-09-02;200;;"DEPOSITO EN\nEFECTIVO"\n')
+    citados, _ = carga.leer("campos_citados.csv", csv_citado)
+    assert citados[0]["referencia"] == "R;1"
+    assert citados[0]["descripcion"] == "VENTA; LOCAL"
+    assert citados[1]["descripcion"] == "DEPOSITO EN\nEFECTIVO"
+    print("CSV citado: separadores y saltos preservados")
 
     bloque = sellos.construir_bloque(
         1, "BANCO", "E-2026-09-01-01", "banco-2026-09-01.csv",

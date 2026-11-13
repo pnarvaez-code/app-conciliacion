@@ -121,6 +121,9 @@ def alta_movimiento(request: Request, fecha: str = Form(""), monto: int = Form(.
         fila = movimientos.alta(fecha, monto, referencia, descripcion, usuario["id"])
     except ValueError as error:
         return RedirectResponse("/?aviso=%s" % str(error).replace(" ", "+"), status_code=303)
+    except psycopg.errors.UniqueViolation:
+        return RedirectResponse(
+            "/?aviso=La+referencia+ya+esta+registrada", status_code=303)
     auditoria.registrar(usuario["id"], "alta_movimiento", "movimientos", fila["id"],
                         {"monto": monto, "referencia": fila["referencia"]},
                         seguridad.ip_de(request))
@@ -136,9 +139,7 @@ async def importar_movimientos(request: Request, texto: str = Form(""),
             "/?aviso=Use+texto+o+archivo%2C+no+ambos", status_code=303)
     try:
         if archivo and archivo.filename:
-            contenido = await archivo.read()
-            if len(contenido) > 5 * 1024 * 1024:
-                raise ValueError("el archivo supera el maximo de 5 MB")
+            contenido = await seguridad.leer_archivo_limitado(archivo)
             filas = importar.leer_archivo(
                 archivo.filename, contenido.decode("utf-8-sig"))
             origen = archivo.filename
@@ -185,6 +186,9 @@ def guardar_movimiento(request: Request, movimiento_id: int, fecha: str = Form(.
         movimientos.actualizar(movimiento_id, fecha, monto, referencia, descripcion)
     except ValueError as error:
         return RedirectResponse("/?aviso=%s" % str(error).replace(" ", "+"), status_code=303)
+    except psycopg.errors.UniqueViolation:
+        return RedirectResponse(
+            "/?aviso=La+referencia+ya+esta+registrada", status_code=303)
     auditoria.registrar(usuario["id"], "editar_movimiento", "movimientos",
                         movimiento_id,
                         {"antes": {"monto": fila["monto"],
@@ -301,11 +305,15 @@ def alta_usuario(request: Request, email: str = Form(...), nombre: str = Form(..
     if existente:
         return RedirectResponse("/usuarios?aviso=El+correo+ya+esta+registrado",
                                 status_code=303)
-    fila = db.ejecutar(
-        "INSERT INTO usuarios (email, nombre, clave_hash, creado_por)"
-        " VALUES (%s, %s, %s, %s) RETURNING id",
-        (email.strip().lower(), nombre.strip(),
-         seguridad.hash_clave(clave), usuario["id"]))
+    try:
+        fila = db.ejecutar(
+            "INSERT INTO usuarios (email, nombre, clave_hash, creado_por)"
+            " VALUES (%s, %s, %s, %s) RETURNING id",
+            (email.strip().lower(), nombre.strip(),
+             seguridad.hash_clave(clave), usuario["id"]))
+    except psycopg.errors.UniqueViolation:
+        return RedirectResponse("/usuarios?aviso=El+correo+ya+esta+registrado",
+                                status_code=303)
     auditoria.registrar(usuario["id"], "alta_usuario", "usuarios", fila["id"],
                         {"email": email}, seguridad.ip_de(request))
     return RedirectResponse("/usuarios?aviso=Usuario+creado", status_code=303)
@@ -315,10 +323,19 @@ def alta_usuario(request: Request, email: str = Form(...), nombre: str = Form(..
 def cambiar_estado_usuario(request: Request, usuario_id: int,
                            activo: int = Form(...)):
     usuario = _exigir_usuario(request)
-    db.ejecutar("UPDATE usuarios SET activo = %s, updated_at = now() WHERE id = %s",
-                (bool(activo), usuario_id))
+    nuevo_estado = bool(activo)
+    if usuario_id == usuario["id"] and not nuevo_estado:
+        return RedirectResponse(
+            "/usuarios?aviso=No+puede+desactivar+su+propio+usuario",
+            status_code=303)
+    actualizado = db.ejecutar(
+        "UPDATE usuarios SET activo = %s, updated_at = now() WHERE id = %s"
+        " RETURNING id", (nuevo_estado, usuario_id))
+    if not actualizado:
+        return RedirectResponse("/usuarios?aviso=Usuario+no+encontrado",
+                                status_code=303)
     auditoria.registrar(usuario["id"],
-                        "activar_usuario" if activo else "desactivar_usuario",
+                        "activar_usuario" if nuevo_estado else "desactivar_usuario",
                         "usuarios", usuario_id, {}, seguridad.ip_de(request))
     return RedirectResponse("/usuarios?aviso=Estado+actualizado", status_code=303)
 

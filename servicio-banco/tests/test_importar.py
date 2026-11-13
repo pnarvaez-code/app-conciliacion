@@ -1,3 +1,4 @@
+from app.cierre import _csv
 from app.importar import leer_texto, leer_xml
 
 
@@ -13,6 +14,12 @@ def main():
         "<descripcion>TRANSFERENCIA</descripcion></movimiento></extracto>")
     assert filas[0]["fecha"] == "2026-11-01"
     assert filas[0]["monto"] == 900
+    contenido = _csv([{"fecha": "2026-11-01", "monto": 900,
+                       "referencia": "TRX;001",
+                       "descripcion": "ABONO; POS"}])
+    filas = leer_texto(contenido)
+    assert filas[0]["referencia"] == "TRX;001"
+    assert filas[0]["descripcion"] == "ABONO; POS"
     try:
         leer_texto("fecha,monto,referencia,descripcion\n"
                    "01/11/2026,900,,VENTA")

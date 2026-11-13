@@ -102,6 +102,16 @@ def eliminar(recepcion_id, usuario_id, ip=None):
                            (recepcion_id,))
             if not cursor.fetchone():
                 raise ValueError("La recepción ya fue eliminada.")
+            cursor.execute(
+                "SELECT id FROM conciliaciones WHERE recepcion_empresa_id = %s"
+                " OR recepcion_banco_id = %s LIMIT 1",
+                (recepcion_id, recepcion_id))
+            operacion = cursor.fetchone()
+            if operacion:
+                raise ValueError(
+                    "La recepción forma parte de la conciliación #%d y no se "
+                    "puede eliminar porque es evidencia de auditoría."
+                    % operacion["id"])
             cursor.execute("DELETE FROM recepciones WHERE id = %s",
                            (recepcion_id,))
             cursor.execute("DELETE FROM archivos WHERE id = %s",

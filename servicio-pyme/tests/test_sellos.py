@@ -6,6 +6,9 @@ Pruebas del nucleo de sellos (funciones puras, sin base de datos).
 Se verifica que los calculos sean estables y que las tres verificaciones
 detecten lo que deben detectar. Se ejecutan con:  python -m tests.test_sellos
 """
+from unittest.mock import patch
+
+from app import cadena
 from app.nucleo import sellos
 
 MOVIMIENTOS = [
@@ -47,6 +50,14 @@ def main():
     # (c) Si se elimina un movimiento, se detecta la cantidad distinta.
     problemas = sellos.verificar_movimientos(bloque, MOVIMIENTOS[:1])
     assert problemas and "cantidad distinta" in problemas[0], problemas
+
+    # La API de bloques no debe aceptar otro origen ni contenido adulterado.
+    with patch.object(cadena.db, "consultar_uno") as consultar:
+        assert not cadena.registrar_bloque_recibido(
+            dict(bloque, origen="BANCO"))["aceptado"]
+        assert not cadena.registrar_bloque_recibido(
+            dict(bloque, n_movimientos=99))["aceptado"]
+        consultar.assert_not_called()
 
     print("Pruebas del nucleo de sellos: todas correctas.")
 

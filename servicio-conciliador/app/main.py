@@ -131,17 +131,16 @@ def ver_recepciones(request: Request):
 async def subir_recepcion(request: Request, origen: str = Form(...),
                           archivo: UploadFile = File(...)):
     usuario = _exigir_usuario(request)
-    contenido = await archivo.read()
     try:
         if not archivo.filename:
             raise ValueError("seleccione un archivo CSV o XML")
-        if len(contenido) > 5 * 1024 * 1024:
-            raise ValueError("el archivo supera el maximo de 5 MB")
+        contenido = await seguridad.leer_archivo_limitado(archivo)
         recepcion = recepciones.recibir(origen, archivo.filename, contenido,
                                         usuario["id"], seguridad.ip_de(request))
         aviso = "Recepcion %s: %s" % (recepcion["estado_integridad"],
                                       recepcion["detalle"] or "")
     except ValueError as error:
+        contenido = locals().get("contenido", b"")
         nombre_archivo = (archivo.filename or "sin-nombre").replace("\\", "/").rsplit("/", 1)[-1]
         detalle = "Archivo %s rechazado: %s" % (nombre_archivo, error)
         alertas.crear(
@@ -373,8 +372,8 @@ def visor_estado(request: Request):
                 "archivo": r["archivo"], "ruta": r["ruta"],
                 "lote": r.get("lote_codigo"),
             }
-    movimientos_cadena = sum(b["n_movimientos"]
-                             for b in cadena.bloques_completos(limite=12))
+    bloques_cadena = cadena.bloques_completos(limite=100000)
+    movimientos_cadena = sum(b["n_movimientos"] for b in bloques_cadena)
     intactas = sum(r["estado_integridad"] == "intacto"
                    for r in recepciones_recientes)
     cargas_por_estado = {}
@@ -393,7 +392,7 @@ def visor_estado(request: Request):
     return JSONResponse({
         "cadena": [{"indice": b["indice"], "origen": b["origen"],
                     "lote": b["lote_codigo"], "movimientos": b["n_movimientos"]}
-                   for b in cadena.bloques_completos(limite=12)],
+                   for b in bloques_cadena[:12]],
         "problemas_cadena": cadena.verificar_cadena_local(),
         "recepciones": [{"origen": r["origen"], "archivo": r["archivo"],
                          "ruta": r["ruta"],

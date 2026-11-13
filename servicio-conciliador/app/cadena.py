@@ -42,8 +42,16 @@ def registrar_bloque_recibido(bloque_recibido, origen_esperado=None):
         return {"aceptado": False, "motivo": "origen de bloque no permitido"}
     if origen_esperado and origen != origen_esperado:
         return {"aceptado": False, "motivo": "origen no coincide con el par"}
-    if sellos.huella_bloque(bloque_recibido) != bloque_recibido["hash_bloque"]:
+    try:
+        huella_calculada = sellos.huella_bloque(bloque_recibido)
+    except (KeyError, TypeError, ValueError):
+        return {"aceptado": False, "motivo": "bloque con campos invalidos"}
+    if not sellos.compare_hashes(huella_calculada,
+                                 bloque_recibido["hash_bloque"]):
         return {"aceptado": False, "motivo": "huella del bloque invalida"}
+    problema = sellos.problema_bloque(bloque_recibido)
+    if problema:
+        return {"aceptado": False, "motivo": problema}
 
     existente = db.consultar_uno(
         "SELECT hash_bloque FROM bloques WHERE origen = %s AND indice = %s",

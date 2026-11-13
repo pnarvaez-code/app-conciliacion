@@ -5,6 +5,8 @@ Lectura de los archivos recibidos: CSV (empresa y banco) y XML (extracto
 del banco). Devuelve los movimientos en el esquema canonico que usan los
 sellos y el motor de conciliacion: fecha, monto, referencia, descripcion.
 """
+import csv
+import io
 import xml.etree.ElementTree as ET
 from datetime import datetime
 
@@ -24,34 +26,51 @@ def leer(nombre, contenido):
 
 def _leer_csv(contenido):
     movimientos = []
-    for numero, linea in enumerate(contenido.splitlines(), start=1):
-        linea = linea.strip().lstrip("\ufeff")
-        if not linea:
-            continue
-        if numero == 1 and linea.lower().startswith("fecha"):
-            if ";" not in linea:
-                raise ValueError("separador CSV invalido: use punto y coma (;), no coma")
-            continue
-        if ";" not in linea and "," in linea:
-            raise ValueError("linea %d: separador CSV invalido, use punto y coma (;)"
-                             % numero)
-        partes = linea.split(";")
-        if len(partes) != 4:
-            raise ValueError("linea %d del archivo debe tener exactamente 4 campos"
-                             % numero)
-        try:
-            monto = int(partes[1].strip())
-        except ValueError:
-            raise ValueError("linea %d: el monto no es un numero entero" % numero)
-        if monto <= 0:
-            raise ValueError("linea %d: el monto debe ser positivo" % numero)
-        fecha = _normalizar_fecha(partes[0].strip(), numero)
-        movimientos.append({"fecha": fecha, "monto": monto,
-                            "referencia": partes[2].strip(),
-                            "descripcion": partes[3].strip()})
-        if len(movimientos) > MAX_MOVIMIENTOS:
-            raise ValueError("el archivo supera el maximo de %d movimientos"
-                             % MAX_MOVIMIENTOS)
+    lector = csv.reader(io.StringIO(contenido.lstrip("\ufeff")),
+                        delimiter=";", strict=True)
+    primera = True
+    try:
+        for partes in lector:
+            numero = lector.line_num
+            if not partes or not any(valor.strip() for valor in partes):
+                continue
+            if primera:
+                primera = False
+                if len(partes) == 1 and "," in partes[0]:
+                    raise ValueError(
+                        "separador CSV invalido: use punto y coma (;), no coma")
+                if (len(partes) >= 2 and
+                        partes[0].strip().lower() == "fecha" and
+                        partes[1].strip().lower() == "monto"):
+                    if len(partes) != 4:
+                        raise ValueError(
+                            "la cabecera CSV debe tener exactamente 4 campos")
+                    continue
+            if len(partes) == 1 and "," in partes[0]:
+                raise ValueError(
+                    "linea %d: separador CSV invalido, use punto y coma (;)"
+                    % numero)
+            if len(partes) != 4:
+                raise ValueError(
+                    "linea %d del archivo debe tener exactamente 4 campos"
+                    % numero)
+            try:
+                monto = int(partes[1].strip())
+            except ValueError:
+                raise ValueError(
+                    "linea %d: el monto no es un numero entero" % numero)
+            if monto <= 0:
+                raise ValueError("linea %d: el monto debe ser positivo" % numero)
+            fecha = _normalizar_fecha(partes[0].strip(), numero)
+            movimientos.append({"fecha": fecha, "monto": monto,
+                                "referencia": partes[2].strip(),
+                                "descripcion": partes[3].strip()})
+            if len(movimientos) > MAX_MOVIMIENTOS:
+                raise ValueError("el archivo supera el maximo de %d movimientos"
+                                 % MAX_MOVIMIENTOS)
+    except csv.Error as error:
+        raise ValueError("linea %d: CSV invalido: %s"
+                         % (lector.line_num, error)) from error
     if not movimientos:
         raise ValueError("el archivo no tiene movimientos")
     return movimientos

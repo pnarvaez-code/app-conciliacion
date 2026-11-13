@@ -55,8 +55,9 @@ def resumen():
 
 def proxima_referencia():
     fila = db.consultar_uno(
-        "SELECT COUNT(*) AS total FROM movimientos WHERE referencia LIKE 'FV-%%'")
-    return "FV-%04d" % (4001 + (fila["total"] if fila else 0))
+        "SELECT COALESCE(MAX((substring(referencia from 4))::bigint), 4000)"
+        " AS ultimo FROM movimientos WHERE referencia ~ '^FV-[0-9]+$'")
+    return "FV-%04d" % ((fila["ultimo"] if fila else 4000) + 1)
 
 
 def alta(fecha, monto, referencia, descripcion, usuario_id):
@@ -64,12 +65,26 @@ def alta(fecha, monto, referencia, descripcion, usuario_id):
     if not fecha:
         fecha = datetime.date.today().isoformat()
     fecha, monto = _validar(fecha, monto)
-    referencia = (referencia or "").strip().upper() or proxima_referencia()
+    referencia = (referencia or "").strip().upper()
     descripcion = (descripcion or "").strip().upper()
-    return db.ejecutar(
-        "INSERT INTO movimientos (fecha, monto, referencia, descripcion,"
-        " creado_por) VALUES (%s, %s, %s, %s, %s) RETURNING *",
-        (fecha, monto, referencia, descripcion, usuario_id))
+    with db.conectar() as conexion:
+        with conexion.cursor() as cursor:
+            # Serializa únicamente la asignación manual de FV-* para que dos
+            # solicitudes simultáneas nunca reciban la misma referencia.
+            cursor.execute("SELECT pg_advisory_xact_lock(781234)")
+            if not referencia:
+                cursor.execute(
+                    "SELECT COALESCE(MAX((substring(referencia from 4))::bigint),"
+                    " 4000) AS ultimo FROM movimientos"
+                    " WHERE referencia ~ '^FV-[0-9]+$'")
+                referencia = "FV-%04d" % (cursor.fetchone()["ultimo"] + 1)
+            cursor.execute(
+                "INSERT INTO movimientos (fecha, monto, referencia, descripcion,"
+                " creado_por) VALUES (%s, %s, %s, %s, %s) RETURNING *",
+                (fecha, monto, referencia, descripcion, usuario_id))
+            fila = cursor.fetchone()
+        conexion.commit()
+    return fila
 
 
 def obtener(movimiento_id):

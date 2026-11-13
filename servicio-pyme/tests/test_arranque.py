@@ -75,6 +75,26 @@ def main():
     assert "Importados+1+movimientos" in respuesta.headers["location"]
     print("Importacion valida -> movimiento registrado")
 
+    # Una referencia manual repetida debe producir un aviso, no un error 500.
+    with patch.object(principal, "_exigir_usuario", return_value={"id": 1}), \
+         patch.object(principal.movimientos, "alta",
+                      side_effect=psycopg.errors.UniqueViolation()):
+        respuesta = cliente.post(
+            "/movimientos", data={"fecha": "2026-11-11", "monto": "1000",
+                                  "referencia": "FV-1", "descripcion": "VENTA"})
+    assert respuesta.status_code == 303
+    assert "referencia+ya+esta+registrada" in respuesta.headers["location"]
+    print("Referencia repetida -> aviso controlado")
+
+    # El usuario de la sesión no puede dejarse sin acceso a sí mismo.
+    with patch.object(principal, "_exigir_usuario", return_value={"id": 7}), \
+         patch.object(principal.db, "ejecutar") as ejecutar:
+        respuesta = cliente.post("/usuarios/7/estado", data={"activo": "0"})
+    assert respuesta.status_code == 303
+    assert "No+puede+desactivar" in respuesta.headers["location"]
+    ejecutar.assert_not_called()
+    print("Autodesactivacion de usuario -> rechazada")
+
     # La descarga debe usar el respaldo de PostgreSQL si el volumen se perdió.
     lote_resguardado = {"codigo": "V-2026-11-11-01", "nombre": "ventas.csv",
                         "ruta": "", "contenido": b"fecha;monto;referencia;descripcion\n"}

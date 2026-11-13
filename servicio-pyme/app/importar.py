@@ -15,6 +15,7 @@ Las referencias no vacías que ya existen se omiten. Las referencias vacías se
 conservan para que el conciliador pueda aplicar los cruces por monto y fecha.
 """
 import csv
+import io
 import json
 import sys
 import xml.etree.ElementTree as ET
@@ -58,23 +59,29 @@ def _fila(fecha, monto, referencia, descripcion, numero):
 def leer_texto(texto):
     """Lee filas separadas por punto y coma con cabecera opcional."""
     filas = []
-    lineas = [linea for linea in texto.lstrip("\ufeff").splitlines() if linea.strip()]
-    if not lineas:
+    contenido = texto.lstrip("\ufeff")
+    if not contenido.strip():
         raise ValueError("el texto no tiene movimientos")
-    primera = lineas[0].lower()
-    tiene_cabecera = "fecha" in primera and "monto" in primera
-    inicio = 1 if tiene_cabecera else 0
-    if ";" not in lineas[0] and "," in lineas[0]:
-        raise ValueError("separador CSV invalido: use punto y coma (;), no coma")
-    delimitador = ";"
-    for numero, linea in enumerate(lineas[inicio:], start=inicio + 1):
-        if ";" not in linea and "," in linea:
-            raise ValueError("linea %d: separador CSV invalido, use punto y coma (;)"
-                             % numero)
-        partes = next(csv.reader([linea], delimiter=delimitador), [])
+    lector = csv.reader(io.StringIO(contenido), delimiter=";")
+    primera = True
+    for partes in lector:
+        numero = lector.line_num
+        if not partes or not any(valor.strip() for valor in partes):
+            continue
+        if primera:
+            primera = False
+            primera_fila = ";".join(partes).lower()
+            if len(partes) == 1 and "," in partes[0]:
+                raise ValueError("separador CSV invalido: use punto y coma (;), no coma")
+            if "fecha" in primera_fila and "monto" in primera_fila:
+                continue
         if len(partes) < 4:
+            if len(partes) == 1 and "," in partes[0]:
+                raise ValueError(
+                    "linea %d: separador CSV invalido, use punto y coma (;)" % numero)
             raise ValueError("linea %d: se esperan fecha;monto;referencia;descripcion" % numero)
-        filas.append(_fila(partes[0], partes[1], partes[2], delimitador.join(partes[3:]), numero))
+        filas.append(_fila(partes[0], partes[1], partes[2],
+                           ";".join(partes[3:]), numero))
         if len(filas) > MAX_FILAS:
             raise ValueError("el archivo supera el maximo de %d movimientos" % MAX_FILAS)
     if not filas:

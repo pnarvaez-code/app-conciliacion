@@ -1,3 +1,4 @@
+from app import cierre
 from app.importar import leer_texto, leer_xml
 
 
@@ -23,6 +24,11 @@ def main():
         assert "separador CSV invalido" in str(error)
     else:
         raise AssertionError("CSV separado por comas debio rechazarse")
+    especiales = [{"fecha": "2026-11-01", "monto": 250000,
+                   "referencia": "FV;ESPECIAL",
+                   "descripcion": "VENTA; CON\nDETALLE"}]
+    assert leer_texto(cierre._csv(especiales)) == especiales
+    print("CSV con separadores y saltos: escape y lectura correctos")
     print("Prueba de importacion PYME: todas correctas.")
 
 

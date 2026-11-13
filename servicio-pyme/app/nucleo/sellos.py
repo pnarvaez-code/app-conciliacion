@@ -68,6 +68,27 @@ def huella_bloque(bloque):
     return huella(json.dumps(contenido, sort_keys=True))
 
 
+def problema_bloque(bloque):
+    """Detecta bloques formalmente válidos pero internamente incoherentes."""
+    try:
+        cantidad = bloque["n_movimientos"]
+        hashes = bloque["hashes_movimientos"]
+        if (not isinstance(cantidad, int) or isinstance(cantidad, bool) or
+                cantidad < 0 or not isinstance(hashes, list)):
+            return "estructura de movimientos invalida"
+        if cantidad != len(hashes):
+            return "cantidad de movimientos no coincide con sus huellas"
+        if any(not isinstance(valor, str) or len(valor) != 64 for valor in hashes):
+            return "huella de movimiento invalida"
+        if not hmac.compare_digest(huella("".join(hashes)), bloque["hash_raiz"]):
+            return "hash raiz no coincide con las huellas de movimientos"
+        if not hmac.compare_digest(huella_bloque(bloque), bloque["hash_bloque"]):
+            return "huella del bloque invalida"
+    except (KeyError, TypeError, ValueError):
+        return "estructura de bloque invalida"
+    return None
+
+
 def construir_bloque(indice, origen, lote_codigo, archivo, movimientos,
                      hash_archivo, hash_anterior, emitido_por, sellado_en):
     """Arma el bloque completo con su huella (sin tocar la base todavia)."""

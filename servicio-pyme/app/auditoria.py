@@ -14,14 +14,18 @@ from app import db
 
 
 def registrar(usuario_id, accion, entidad=None, entidad_id=None,
-              detalle=None, ip=None):
+              detalle=None, ip=None, cursor=None):
     """Agrega una fila de auditoria. `detalle` se guarda como jsonb."""
-    db.ejecutar(
+    sentencia = (
         "INSERT INTO auditoria (usuario_id, accion, entidad, entidad_id,"
-        " detalle, ip) VALUES (%s, %s, %s, %s, %s, %s)",
-        (usuario_id, accion, entidad,
-         str(entidad_id) if entidad_id is not None else None,
-         json.dumps(detalle or {}, ensure_ascii=False), ip))
+        " detalle, ip) VALUES (%s, %s, %s, %s, %s, %s)")
+    parametros = (usuario_id, accion, entidad,
+                  str(entidad_id) if entidad_id is not None else None,
+                  json.dumps(detalle or {}, ensure_ascii=False), ip)
+    if cursor is None:
+        db.ejecutar(sentencia, parametros)
+    else:
+        cursor.execute(sentencia, parametros)
 
 
 def listar(limite=200):

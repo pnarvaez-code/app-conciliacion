@@ -44,4 +44,10 @@ def listar_rechazos_carga(limite=100):
         " a.detalle->>'motivo' AS motivo"
         " FROM auditoria a LEFT JOIN usuarios u ON u.id = a.usuario_id"
         " WHERE a.accion = 'recepcion_rechazada'"
+        " AND NOT EXISTS ("
+        " SELECT 1 FROM recepciones r"
+        " JOIN archivos ar ON ar.id = r.archivo_id"
+        " WHERE r.estado_integridad = 'rechazado'"
+        " AND r.origen = a.detalle->>'origen'"
+        " AND ar.sha256 = a.detalle->>'sha256')"
         " ORDER BY a.id DESC LIMIT %s", (limite,))

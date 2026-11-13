@@ -27,6 +27,7 @@ from app import config, db
 CLAVE_COOKIE = "sesion_banco"
 DURACION_SESION = datetime.timedelta(hours=8)
 LIMITE_BCRYPT = 72   # bcrypt solo considera los primeros 72 bytes de la clave
+LIMITE_ARCHIVO = 5 * 1024 * 1024
 
 
 def hash_clave(clave):
@@ -94,6 +95,14 @@ def ip_de(request: Request):
     if reenviada:
         return reenviada.split(",")[0].strip()
     return request.client.host if request.client else ""
+
+
+async def leer_archivo_limitado(archivo, limite=LIMITE_ARCHIVO):
+    """Lee como máximo ``limite + 1`` bytes para evitar agotar memoria."""
+    contenido = await archivo.read(limite + 1)
+    if len(contenido) > limite:
+        raise ValueError("el archivo supera el maximo de 5 MB")
+    return contenido
 
 
 def _leer_token(valor_cookie):

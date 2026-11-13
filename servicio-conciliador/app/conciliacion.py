@@ -18,7 +18,7 @@ Los pendientes tambien generan alerta, para que el auditor los vea.
 """
 import json
 
-from app import alertas, archivos, auditoria, carga, db, recepciones
+from app import archivos, carga, db, recepciones
 from app.nucleo import conciliacion as motor
 
 
@@ -44,54 +44,92 @@ def ejecutar(usuario_id, ip=None):
         movimientos_empresa, movimientos_banco)
     total_empresa, total_banco = len(movimientos_empresa), len(movimientos_banco)
 
-    fila = db.ejecutar(
-        "INSERT INTO conciliaciones (desde, hasta, total_empresa, total_banco,"
-        " conciliados, porcentaje, recepcion_empresa_id, recepcion_banco_id,"
-        " ejecutada_por)"
-        " VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING *",
-        (_fecha_min(movimientos_empresa + movimientos_banco),
-         _fecha_max(movimientos_empresa + movimientos_banco),
-         total_empresa, total_banco, len(pares),
-         round(100.0 * len(pares) / max(total_empresa, total_banco))
-         if total_empresa or total_banco else 0,
-         empresa["id"], banco["id"], usuario_id))
-    conciliacion_id = fila["id"]
-
-    for movimiento_empresa, movimiento_banco, nivel in pares:
-        db.ejecutar(
-            "INSERT INTO conciliacion_pares (conciliacion_id, nivel,"
-            " movimiento_empresa, movimiento_banco) VALUES (%s, %s, %s::jsonb, %s::jsonb)",
-            (conciliacion_id, nivel, _json(movimiento_empresa),
-             _json(movimiento_banco)))
-
     resumen_diferencias = {}
     for movimiento in pendientes_empresa:
         tipo, motivo = motor.clasificar_pendiente(movimiento, pendientes_banco)
         tipo = tipo or "en_empresa_no_banco"
-        _guardar_pendiente(conciliacion_id, "EMPRESA", tipo, movimiento, motivo)
         resumen_diferencias[tipo] = resumen_diferencias.get(tipo, 0) + 1
     for movimiento in pendientes_banco:
         tipo, motivo = motor.clasificar_pendiente(movimiento, pendientes_empresa)
         tipo = tipo or "en_banco_no_empresa"
-        _guardar_pendiente(conciliacion_id, "BANCO", tipo, movimiento, motivo)
         resumen_diferencias[tipo] = resumen_diferencias.get(tipo, 0) + 1
 
-    if resumen_diferencias:
-        detalle = "; ".join("%s: %d" % (motor.TIPOS_DIFERENCIA.get(tipo, tipo), n)
-                            for tipo, n in sorted(resumen_diferencias.items()))
-        alertas.crear("diferencia", "alta" if "monto_distinto" in resumen_diferencias
-                      else "media",
-                      "La conciliacion encontro %d diferencias"
-                      % sum(resumen_diferencias.values()),
-                      detalle, referencia="conciliacion %d" % conciliacion_id,
-                      usuario_id=usuario_id)
+    # Cabecera, pares, pendientes, alerta y auditoría forman una sola unidad.
+    # El bloqueo evita que dos clics simultáneos creen la misma operación.
+    with db.conectar() as conexion:
+        with conexion.cursor() as cursor:
+            cursor.execute("SELECT pg_advisory_xact_lock(781236)")
+            cursor.execute(
+                "SELECT id FROM conciliaciones WHERE recepcion_empresa_id = %s "
+                "AND recepcion_banco_id = %s ORDER BY id DESC LIMIT 1",
+                (empresa["id"], banco["id"]))
+            repetida = cursor.fetchone()
+            if repetida:
+                raise ValueError(
+                    "Estos dos archivos ya fueron conciliados en la operacion #%d. "
+                    "Suba un archivo nuevo de Empresa o Banco para ejecutar otra conciliacion."
+                    % repetida["id"])
 
-    auditoria.registrar(usuario_id, "conciliacion", "conciliaciones",
-                        conciliacion_id,
-                        {"conciliados": len(pares), "total_empresa": total_empresa,
-                         "total_banco": total_banco,
-                         "pendientes": len(pendientes_empresa) + len(pendientes_banco),
-                         "detalle": resumen_diferencias}, ip)
+            cursor.execute(
+                "INSERT INTO conciliaciones (desde, hasta, total_empresa, total_banco,"
+                " conciliados, porcentaje, recepcion_empresa_id, recepcion_banco_id,"
+                " ejecutada_por)"
+                " VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING *",
+                (_fecha_min(movimientos_empresa + movimientos_banco),
+                 _fecha_max(movimientos_empresa + movimientos_banco),
+                 total_empresa, total_banco, len(pares),
+                 round(100.0 * len(pares) / max(total_empresa, total_banco))
+                 if total_empresa or total_banco else 0,
+                 empresa["id"], banco["id"], usuario_id))
+            fila = cursor.fetchone()
+            conciliacion_id = fila["id"]
+
+            for movimiento_empresa, movimiento_banco, nivel in pares:
+                cursor.execute(
+                    "INSERT INTO conciliacion_pares (conciliacion_id, nivel,"
+                    " movimiento_empresa, movimiento_banco)"
+                    " VALUES (%s, %s, %s::jsonb, %s::jsonb)",
+                    (conciliacion_id, nivel, _json(movimiento_empresa),
+                     _json(movimiento_banco)))
+
+            for movimiento in pendientes_empresa:
+                tipo, motivo = motor.clasificar_pendiente(
+                    movimiento, pendientes_banco)
+                _guardar_pendiente(
+                    cursor, conciliacion_id, "EMPRESA",
+                    tipo or "en_empresa_no_banco", movimiento, motivo)
+            for movimiento in pendientes_banco:
+                tipo, motivo = motor.clasificar_pendiente(
+                    movimiento, pendientes_empresa)
+                _guardar_pendiente(
+                    cursor, conciliacion_id, "BANCO",
+                    tipo or "en_banco_no_empresa", movimiento, motivo)
+
+            if resumen_diferencias:
+                detalle = "; ".join(
+                    "%s: %d" % (motor.TIPOS_DIFERENCIA.get(tipo, tipo), n)
+                    for tipo, n in sorted(resumen_diferencias.items()))
+                cursor.execute(
+                    "INSERT INTO alertas (tipo, severidad, titulo, detalle,"
+                    " referencia, usuario_id) VALUES"
+                    " ('diferencia', %s, %s, %s, %s, %s)",
+                    ("alta" if "monto_distinto" in resumen_diferencias else "media",
+                     "La conciliacion encontro %d diferencias"
+                     % sum(resumen_diferencias.values()), detalle,
+                     "conciliacion %d" % conciliacion_id, usuario_id))
+
+            cursor.execute(
+                "INSERT INTO auditoria (usuario_id, accion, entidad, entidad_id,"
+                " detalle, ip) VALUES (%s, 'conciliacion', 'conciliaciones',"
+                " %s, %s::jsonb, %s)",
+                (usuario_id, str(conciliacion_id), _json({
+                    "conciliados": len(pares),
+                    "total_empresa": total_empresa,
+                    "total_banco": total_banco,
+                    "pendientes": len(pendientes_empresa) + len(pendientes_banco),
+                    "detalle": resumen_diferencias,
+                }), ip))
+        conexion.commit()
     return fila
 
 
@@ -150,8 +188,8 @@ def detalle(conciliacion_id):
     return pares, pendientes, por_tipo
 
 
-def _guardar_pendiente(conciliacion_id, origen, tipo, movimiento, motivo):
-    db.ejecutar(
+def _guardar_pendiente(cursor, conciliacion_id, origen, tipo, movimiento, motivo):
+    cursor.execute(
         "INSERT INTO conciliacion_pendientes (conciliacion_id, origen,"
         " tipo_diferencia, movimiento, motivo) VALUES (%s, %s, %s, %s::jsonb, %s)",
         (conciliacion_id, origen, tipo, _json(movimiento), motivo))
