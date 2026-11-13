@@ -1,14 +1,14 @@
 # -*- coding: utf-8 -*-
 """app/inicio.py
 
-Arranque del conciliador: carpeta del volumen, migracion, administrador y
-sincronizacion inicial de la cadena con los otros dos servicios.
+Arranque del conciliador: carpeta del volumen, migracion y administrador,
+sin llamadas de red a los otros dos servicios.
 
 Se ejecuta con:  python -m app.inicio
 """
 import os
 
-from app import cadena, config, db
+from app import config, db
 
 
 def main():
@@ -27,8 +27,6 @@ def main():
     else:
         print("Usuarios existentes; no se crea administrador.")
 
-    for resultado in cadena.sincronizar_con_pares():
-        print("Sincronizacion: %s" % resultado)
     print("Arranque completo.")
 
 

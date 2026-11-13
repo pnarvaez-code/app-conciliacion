@@ -104,12 +104,33 @@ Conciliador antes de probar **Cadena → Sincronizar** en el Conciliador.
 
 Despliega primero PYME y banco; luego el conciliador. En cada app, usa Deploy Branch o habilita despliegues automaticos desde GitHub. Al iniciar, el proceso selecciona el servicio indicado por SERVICE, aplica la migracion inicial si la base esta vacia, crea el administrador inicial y arranca Uvicorn usando el puerto PORT asignado por Heroku.
 
-Tras desplegar los tres, entra al conciliador e inicia la sincronizacion de la cadena desde Cadena → Sincronizar. El arranque realiza hasta tres intentos por cada origen para tolerar el despertar tardio de dynos en Heroku. Si un origen no responde, revisa los logs y vuelve a usar **Cadena → Sincronizar** después de confirmar las URLs y el token. El servidor escucha `PORT` con fallback `8000`, confía en proxy headers de Heroku y usa `--forwarded-allow-ips=*`. Inicia sesion en cada servicio con ADMIN_EMAIL y ADMIN_CLAVE configurados en Heroku.
+Tras desplegar los tres, entra al conciliador e inicia la sincronización de la
+cadena desde **Cadena → Sincronizar**. La sincronización se hace solo cuando
+un usuario la solicita; el arranque no llama a las otras aplicaciones. Esto
+permite que los dynos inactivos entren en reposo según el plan de Heroku y evita
+despertar PYME o Banco al abrir únicamente Conciliador. Si un origen no responde,
+abre su URL o revisa los logs y vuelve a usar **Cadena → Sincronizar** después
+de confirmar las URLs y el token. El servidor escucha `PORT` con fallback
+`8000`, confía en proxy headers de Heroku y usa `--forwarded-allow-ips=*`.
 
-La plataforma también reintenta automáticamente cada 30 segundos: PYME y
-Banco reenvían bloques pendientes al Conciliador y el Conciliador solicita
-bloques faltantes a ambos orígenes. Después de cambiar una Config Var, reinicia
-o redeploya las tres aplicaciones para que los procesos lean la configuración.
+Los bloques se propagan al momento de **sellar** un lote o extracto. Los envíos
+pendientes se reintentan únicamente cuando un usuario presiona **Verificar
+conexión** en PYME o Banco. Después de cambiar una Config Var, reinicia o
+redeploya las tres aplicaciones para que los procesos lean la configuración.
+
+### Reposo y consumo
+
+El código no ejecuta pings, cron interno ni sincronización periódica: abrir
+PYME no llama a Banco o Conciliador, y abrir Conciliador no despierta a los
+otros dos servicios. Por tanto, cada URL puede permanecer inactiva de forma
+independiente.
+
+El reposo automático lo determina el plan de Heroku, no la aplicación. En un
+plan que admite suspensión por inactividad (por ejemplo, Eco), Heroku detiene
+el dyno después de su periodo de inactividad y lo despierta al acceder a su
+propia URL. Los dynos Basic, Standard o superiores permanecen activos mientras
+estén escalados; si se requiere reposo en esos planes, se debe reducir el
+proceso web a cero desde Heroku y escalarlo nuevamente cuando sea necesario.
 
 ## Almacenamiento y reinicios
 

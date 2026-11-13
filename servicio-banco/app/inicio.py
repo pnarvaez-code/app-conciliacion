@@ -8,11 +8,11 @@ Pasos:
   2. aplica la migracion inicial (solo si la base esta vacia),
   3. crea el primer usuario (administrador) desde las variables de
      entorno (ADMIN_EMAIL y ADMIN_CLAVE), solo la primera vez,
-  4. reintenta la propagacion de bloques que hayan quedado pendientes.
+  4. queda disponible sin llamar a otros servicios.
 
 Se ejecuta con:  python -m app.inicio
 """
-from app import cadena, db, config
+from app import db, config
 
 
 def main():
@@ -32,7 +32,6 @@ def main():
     else:
         print("Usuarios existentes; no se crea administrador.")
 
-    cadena.reintentar_envios()
     print("Arranque completo.")
 
 

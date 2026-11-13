@@ -238,9 +238,10 @@ Cada cierre crea un bloque con:
 - índice y hash del bloque anterior;
 - fecha, origen y usuario emisor.
 
-Los bloques nuevos se envían automáticamente al Conciliador. Si un servicio
-está temporalmente fuera de línea, el envío queda en `bloques_envios` y se
-reintenta durante el arranque.
+Los bloques nuevos se envían al Conciliador al sellar un lote o extracto. Si
+un servicio está temporalmente fuera de línea, el envío queda en
+`bloques_envios`; el usuario puede reenviarlo desde **Conexión → Verificar
+conexión** sin mantener solicitudes de red en segundo plano.
 
 ### 3. Sincronizar en el Conciliador
 
@@ -474,7 +475,7 @@ web: python heroku_start.py
 3. usa `/tmp/datos` como almacenamiento temporal;
 4. crea o actualiza el esquema de base de datos;
 5. crea el administrador inicial si la base está vacía;
-6. sincroniza el Conciliador con PYME y Banco;
+6. inicia el servicio sin consultar ni despertar a PYME o Banco;
 7. inicia Uvicorn en `0.0.0.0:$PORT`.
 
 Desplegar primero PYME y Banco, y después el Conciliador:

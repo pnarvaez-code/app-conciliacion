@@ -15,7 +15,6 @@ Pantallas (todas requieren sesion, salvo el ingreso):
 
 API interna para los otros servicios: ver app/internos.py.
 """
-import asyncio
 import logging
 import os
 from pathlib import Path
@@ -41,30 +40,7 @@ app.include_router(internos.router)
 
 from app import seguridad  # se importa despues para evitar ciclos en pruebas
 
-_tarea_sincronizacion = None
 _log = logging.getLogger(__name__)
-
-
-async def _sincronizar_periodicamente():
-    while True:
-        await asyncio.sleep(30)
-        try:
-            await asyncio.to_thread(cadena.sincronizar_con_pares)
-        except Exception:
-            _log.exception("Error en la sincronizacion periodica de la cadena")
-
-
-@app.on_event("startup")
-async def iniciar_sincronizacion_periodica():
-    global _tarea_sincronizacion
-    _tarea_sincronizacion = asyncio.create_task(_sincronizar_periodicamente())
-
-
-@app.on_event("shutdown")
-async def detener_sincronizacion_periodica():
-    if _tarea_sincronizacion:
-        _tarea_sincronizacion.cancel()
-        await asyncio.gather(_tarea_sincronizacion, return_exceptions=True)
 
 
 def _contexto(request, usuario, **extra):

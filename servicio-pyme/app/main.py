@@ -13,7 +13,6 @@ Pantallas (todas requieren sesion, salvo el ingreso):
 API interna para los otros servicios: ver app/internos.py.
 Cada accion relevante queda auditada con el usuario y la IP de origen.
 """
-import asyncio
 import logging
 import os
 from pathlib import Path
@@ -35,30 +34,7 @@ app.mount("/estaticos", StaticFiles(directory=str(BASE / "estaticos")),
 plantillas = Jinja2Templates(directory=str(BASE / "plantillas"))
 app.include_router(internos.router)
 
-_tarea_sincronizacion = None
 _log = logging.getLogger(__name__)
-
-
-async def _reintentar_sincronizacion():
-    while True:
-        await asyncio.sleep(30)
-        try:
-            await asyncio.to_thread(cadena.reintentar_envios)
-        except Exception:
-            _log.exception("Error en el reintento periodico de sincronizacion")
-
-
-@app.on_event("startup")
-async def iniciar_sincronizacion_periodica():
-    global _tarea_sincronizacion
-    _tarea_sincronizacion = asyncio.create_task(_reintentar_sincronizacion())
-
-
-@app.on_event("shutdown")
-async def detener_sincronizacion_periodica():
-    if _tarea_sincronizacion:
-        _tarea_sincronizacion.cancel()
-        await asyncio.gather(_tarea_sincronizacion, return_exceptions=True)
 
 
 def _contexto(request, usuario, **extra):
