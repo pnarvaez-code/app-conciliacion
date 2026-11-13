@@ -7,16 +7,16 @@
 <link rel="stylesheet" href="/estaticos/estilos.css">
 </head>
 <body class="centrado">
-<form class="tarjeta" method="post" action="/login">
-  <h1>{{ servicio }}</h1>
-  <p class="tenue">Sistema de conciliacion con integridad verificable.
-  Ingrese con su usuario.</p>
+<form class="tarjeta login-panel" method="post" action="/login">
+  <div class="login-marca"><span>B</span><div><small>PLATAFORMA FINANCIERA</small><h1>{{ servicio }}</h1></div></div>
+  <p class="tenue">Control de extractos, movimientos y sellos verificables.</p>
   {% if error %}<div class="error">{{ error }}</div>{% endif %}
   <label>Correo</label>
   <input type="email" name="email" required autofocus>
   <label>Clave</label>
   <input type="password" name="clave" required>
-  <button type="submit">Ingresar</button>
+  <button type="submit">Ingresar al sistema</button>
+  <p class="login-pie">Acceso protegido · Sesión auditada</p>
 </form>
 </body>
 </html>
