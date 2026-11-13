@@ -299,7 +299,10 @@ def ver_conexion(request: Request):
         resultados.append(resultado)
     return plantillas.TemplateResponse(request, "conexion.html",
                                        _contexto(request, usuario,
-                                                 resultados=resultados))
+                                                 resultados=resultados,
+                                                 conexion_establecida=all(
+                                                     item["estado"] == "conectado"
+                                                     for item in resultados)))
 
 
 @app.post("/conexion/verificar")

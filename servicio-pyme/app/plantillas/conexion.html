@@ -2,6 +2,13 @@
 {% block contenido %}
 <h2>Conexión entre aplicaciones</h2>
 <section class="tarjeta">
+  <div class="estado-conexion {{ 'establecida' if conexion_establecida else 'pendiente' }}" role="status">
+    <span class="estado-conexion-icono">{{ '✓' if conexion_establecida else '!' }}</span>
+    <div>
+      <strong>{{ 'Conexión establecida' if conexion_establecida else 'Conexión pendiente de revisión' }}</strong>
+      <p>{% if conexion_establecida %}PYME y Conciliador se comunican con el token configurado.{% else %}Revise la URL y el token del Conciliador antes de continuar.{% endif %}</p>
+    </div>
+  </div>
   <p>Esta verificación comprueba que el servicio esté activo y que pueda
   comunicarse con el Conciliador usando la URL y el token configurados.</p>
   <form method="post" action="/conexion/verificar">
@@ -20,5 +27,6 @@
     </tr>
     {% endfor %}
   </table>
+  <p class="tenue">La comprobación integral de PYME, Banco y Conciliador se muestra en <strong>Conciliador → Conexión</strong>.</p>
 </section>
 {% endblock %}

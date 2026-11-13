@@ -2,6 +2,13 @@
 {% block contenido %}
 <h2>Conexión de las tres aplicaciones</h2>
 <section class="tarjeta">
+  <div class="estado-conexion {{ 'establecida' if conexion_establecida else 'pendiente' }}" role="status">
+    <span class="estado-conexion-icono">{{ '✓' if conexion_establecida else '!' }}</span>
+    <div>
+      <strong>{{ 'Conexión establecida entre las tres aplicaciones' if conexion_establecida else 'Conexión incompleta: requiere revisión' }}</strong>
+      <p>{% if conexion_establecida %}PYME, Banco y Conciliador están disponibles y validaron el token compartido.{% else %}Al menos una aplicación no respondió correctamente. Revise el detalle antes de conciliar.{% endif %}</p>
+    </div>
+  </div>
   <p>La verificación consulta la API interna de PYME y Banco, valida el
   token compartido y muestra el último índice conocido de cada cadena.</p>
   <form method="post" action="/conexion/verificar">
