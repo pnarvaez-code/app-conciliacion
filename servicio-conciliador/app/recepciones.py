@@ -15,7 +15,7 @@ que el emisor dejo en la cadena (copia local del conciliador):
 Cada recepcion queda auditada con el usuario que la subio y genera alerta
 cuando no esta intacta.
 """
-from app import alertas, archivos, auditoria, cadena, carga, db, seguridad
+from app import alertas, archivos, auditoria, cadena, carga, db
 from app.nucleo import sellos
 
 

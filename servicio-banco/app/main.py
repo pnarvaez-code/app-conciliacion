@@ -171,9 +171,11 @@ async def importar_movimientos(request: Request, texto: str = Form(""),
     except (UnicodeDecodeError, ValueError) as error:
         from urllib.parse import quote_plus
         return RedirectResponse("/?aviso=%s" % quote_plus(str(error)), status_code=303)
+    from urllib.parse import quote_plus
     return RedirectResponse(
-        "/?aviso=Importados+%d+movimientos%2C+%d+omitidos+por+referencia"
-        % (creados, omitidos), status_code=303)
+        "/?aviso=%s" % quote_plus(
+            "Importados %d movimientos, %d omitidos por referencia"
+            % (creados, omitidos)), status_code=303)
 
 
 @app.get("/movimientos/{movimiento_id}/editar", response_class=HTMLResponse)
