@@ -19,6 +19,30 @@ plataforma de conciliación:
 Cada servicio tiene su propia aplicación, base de datos PostgreSQL, usuarios,
 sesiones, auditoría y copia de los bloques que le corresponden.
 
+## Garantías funcionales e integridad
+
+La plataforma está preparada para una demostración de conciliación auditable:
+
+- Los archivos CSV admiten fechas `AAAA-MM-DD` y `DD/MM/AAAA`; al ingresar al
+  Conciliador se normalizan a `AAAA-MM-DD` para aplicar el mismo criterio en
+  todos los cruces.
+- Una referencia vacía se conserva tal como fue emitida. No se reemplaza por
+  una referencia artificial: el motor puede conciliarla por **monto y fecha
+  cercana** (nivel 2).
+- Las referencias no vacías repetidas se omiten durante la importación para
+  evitar duplicar movimientos.
+- Cada lote o extracto tiene huella SHA-256 del archivo, huella de cada
+  movimiento y hash raíz. Antes de conciliar, el archivo recibido se compara
+  contra su sello de origen.
+- Un archivo modificado después de su emisión queda en estado `alterado`,
+  genera evidencia para Auditoría/Alertas y queda excluido de la conciliación.
+- Una pareja de archivos ya conciliada no puede procesarse otra vez como si
+  fuera una conciliación nueva.
+
+Los errores de formato, credenciales incorrectas y fallas temporales de base
+de datos se muestran como mensajes controlados en la interfaz; no deben
+exponer una pantalla de `Internal Server Error` al usuario.
+
 ## Arquitectura actual
 
 | Servicio | Carpeta | Puerto local | Función |
@@ -170,8 +194,9 @@ docker compose -f docker-compose.yml -f docker-compose.local.yml \
   exec -T banco python -m app.importar ejemplos/extracto_ejemplo.csv
 ```
 
-Las referencias duplicadas se omiten y la importación queda registrada en
-Auditoría.
+Las referencias no vacías duplicadas se omiten y la importación queda
+registrada en Auditoría. Las filas sin referencia se importan sin alterarla,
+porque son necesarias para el cruce por monto y fecha.
 
 ### 2. Cerrar y sellar
 
@@ -230,14 +255,48 @@ El Conciliador compara cada archivo con su sello. Los estados principales son:
 
 En **Conciliación**, ejecutar el proceso para obtener:
 
-- movimientos conciliados por referencia exacta;
-- coincidencias por monto y fecha;
+- movimientos conciliados por referencia exacta (nivel 1);
+- coincidencias sin referencia por monto y fecha dentro de la ventana
+  permitida (nivel 2);
 - coincidencias por descripción y monto aproximado;
 - movimientos pendientes;
 - diferencias de existencia, monto, fecha o referencia.
 
 El **Visor** muestra el estado actualizado de la cadena, recepciones,
 conciliación y alertas.
+
+## Casos de prueba para la demostración
+
+Para comprobar los tres comportamientos principales con los archivos de
+prueba, siga el flujo completo: importar cada archivo en su emisor, sellar el
+lote/extracto, sincronizar **Cadena**, descargar el archivo emitido, recibirlo
+en Conciliador y ejecutar **Conciliación**. La guía breve con ejemplos del
+repositorio está en [CASOS_DE_DEMOSTRACION.md](CASOS_DE_DEMOSTRACION.md).
+
+| Caso | Archivos | Resultado esperado |
+|---|---|---|
+| 1. Coincidencia exacta | `caso1_pyme_coincidencia_exacta.csv` + `caso1_banco_coincidencia_exacta.csv` | Conciliación completa por referencia exacta (nivel 1), sin pendientes. |
+| 2. Sin referencia | `caso2_pyme_sin_referencia.csv` + `caso2_banco_sin_referencia.csv` | Las filas sin referencia se conservan y se detectan mediante monto y fecha (nivel 2). |
+| 3. Diferencias y pendientes | `caso3_pyme_discrepancias_y_pendientes.csv` + `caso3_banco_discrepancias_y_pendientes.csv` | Se muestran pares válidos y excepciones de referencia, monto, fecha o existencia para revisión. |
+
+La prueba de alteración criptográfica es distinta del caso 3: después de
+sellar un archivo en PYME o Banco, modifique su contenido y súbalo al
+Conciliador. La huella SHA-256 recalculada no coincidirá con el sello y la
+recepción deberá aparecer como `alterado`; ese archivo no será conciliable.
+
+### Resultados verificados con los archivos de prueba
+
+La batería local validó los seis CSV suministrados para la prueba:
+
+| Caso | Pares conciliados | Resultado |
+|---|---:|---|
+| 1 | 590 de 590 | 100 % por referencia exacta. |
+| 2 | 590 de 590 | 413 pares de nivel 1 y 177 pares sin referencia de nivel 2. |
+| 3 | 481 pares | 218 pendientes: diferencias de referencia, monto, fecha y existencia. |
+
+Estos resultados describen el motor de conciliación con los datos entregados.
+El caso 3 representa diferencias operativas genuinas; solo un archivo que
+cambie después de estar sellado debe clasificarse como `alterado`.
 
 ### Reportes PDF
 
