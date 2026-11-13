@@ -8,19 +8,19 @@
 </head>
 <body>
 <nav class="barra">
-  <b>{{ servicio }}</b>
-  <a href="/">Panel</a>
-  <a href="/recepciones">Recepciones</a>
-  <a href="/conciliacion">Conciliacion</a>
-  <a href="/cadena">Cadena</a>
-  <a href="/visor">Visor</a>
-  <a href="/usuarios">Usuarios</a>
-  <a href="/alertas">Alertas{% if alertas_nuevas %} ({{ alertas_nuevas }}){% endif %}</a>
-  <a href="/auditoria">Auditoria</a>
-  <a href="/conexion">Conexion</a>
-  <a class="boton-reporte" href="/reporte">Reporte</a>
-  <a class="boton-reset" href="/reset">Reset</a>
-  <span class="salir"><a href="/salir">Salir ({{ usuario.email }})</a></span>
+  <a class="marca" href="/"><span class="marca-icono">C</span><span><b>{{ servicio }}</b><small>Control de conciliación</small></span></a>
+  <div class="nav-enlaces">
+    <a class="{{ 'activo' if request.url.path == '/' else '' }}" href="/">Panel</a>
+    <a class="{{ 'activo' if request.url.path == '/recepciones' else '' }}" href="/recepciones">Recepciones</a>
+    <a class="{{ 'activo' if request.url.path == '/conciliacion' else '' }}" href="/conciliacion">Conciliación</a>
+    <a class="{{ 'activo' if request.url.path == '/cadena' else '' }}" href="/cadena">Cadena</a>
+    <a class="{{ 'activo' if request.url.path == '/visor' else '' }}" href="/visor">Visor</a>
+    <a class="{{ 'activo' if request.url.path == '/usuarios' else '' }}" href="/usuarios">Usuarios</a>
+    <a class="{{ 'activo' if request.url.path == '/alertas' else '' }}" href="/alertas">Alertas{% if alertas_nuevas %} <em>{{ alertas_nuevas }}</em>{% endif %}</a>
+    <a class="{{ 'activo' if request.url.path == '/auditoria' else '' }}" href="/auditoria">Auditoría</a>
+    <a class="{{ 'activo' if request.url.path == '/conexion' else '' }}" href="/conexion">Conexión</a>
+  </div>
+  <div class="nav-acciones"><a class="boton-reporte" href="/reporte">Reporte</a><a class="boton-reset" href="/reset">Reset</a><span class="salir"><a href="/salir">{{ usuario.email }} · Salir</a></span></div>
 </nav>
 <main>
 {% if request.query_params.get('aviso') %}

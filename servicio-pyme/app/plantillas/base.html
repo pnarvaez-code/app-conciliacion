@@ -8,16 +8,16 @@
 </head>
 <body>
 <nav class="barra">
-  <b>{{ servicio }}</b>
-  <a href="/">Ventas</a>
-  <a href="/lotes">Cierres y sellos</a>
-  <a href="/usuarios">Usuarios</a>
-  <a href="/alertas">Alertas{% if alertas_nuevas %} ({{ alertas_nuevas }}){% endif %}</a>
-  <a href="/auditoria">Auditoria</a>
-  <a href="/conexion">Conexion</a>
-  <a class="boton-reporte" href="/reporte">Reporte PDF</a>
-  <a class="boton-reset" href="/reset">Reset</a>
-  <span class="salir"><a href="/salir">Salir ({{ usuario.email }})</a></span>
+  <a class="marca" href="/"><span class="marca-icono">P</span><span><b>{{ servicio }}</b><small>Gestión de ventas</small></span></a>
+  <div class="nav-enlaces">
+    <a class="{{ 'activo' if request.url.path == '/' else '' }}" href="/">Ventas</a>
+    <a class="{{ 'activo' if request.url.path == '/lotes' else '' }}" href="/lotes">Cierres y sellos</a>
+    <a class="{{ 'activo' if request.url.path == '/usuarios' else '' }}" href="/usuarios">Usuarios</a>
+    <a class="{{ 'activo' if request.url.path == '/alertas' else '' }}" href="/alertas">Alertas{% if alertas_nuevas %} <em>{{ alertas_nuevas }}</em>{% endif %}</a>
+    <a class="{{ 'activo' if request.url.path == '/auditoria' else '' }}" href="/auditoria">Auditoría</a>
+    <a class="{{ 'activo' if request.url.path == '/conexion' else '' }}" href="/conexion">Conexión</a>
+  </div>
+  <div class="nav-acciones"><a class="boton-reporte" href="/reporte">Reporte</a><a class="boton-reset" href="/reset">Reset</a><span class="salir"><a href="/salir">{{ usuario.email }} · Salir</a></span></div>
 </nav>
 <main>
 {% if request.query_params.get('aviso') %}
