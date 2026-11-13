@@ -170,6 +170,24 @@ solo cuando se quiera reiniciar la demostración.
 La clave inicial se toma de `ADMIN_CLAVE`. El valor de ejemplo es
 `conciliacion2026`; debe cambiarse antes de usar información real.
 
+Si alguno de los puertos locales ya está ocupado, se puede elegir otro sin
+modificar el archivo Compose:
+
+```bash
+PUERTO_PYME_LOCAL=18001 PUERTO_BANCO_LOCAL=18002 \
+PUERTO_CONCILIADOR_LOCAL=18080 \
+docker compose -f docker-compose.yml -f docker-compose.local.yml up -d --build
+```
+
+En PowerShell:
+
+```powershell
+$env:PUERTO_PYME_LOCAL="18001"
+$env:PUERTO_BANCO_LOCAL="18002"
+$env:PUERTO_CONCILIADOR_LOCAL="18080"
+docker compose -f docker-compose.yml -f docker-compose.local.yml up -d --build
+```
+
 ### 4. Revisar logs y estado
 
 ```bash

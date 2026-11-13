@@ -10,12 +10,12 @@
 services:
   pyme:
     ports:
-      - "8001:8001"
+      - "${PUERTO_PYME_LOCAL:-8001}:8001"
 
   banco:
     ports:
-      - "8002:8002"
+      - "${PUERTO_BANCO_LOCAL:-8002}:8002"
 
   conciliador:
     ports:
-      - "8080:8000"
+      - "${PUERTO_CONCILIADOR_LOCAL:-8080}:8000"
