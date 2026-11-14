@@ -27,6 +27,8 @@ def main():
 
     db.asegurar_indices()
     db.asegurar_respaldo_archivos()
+    from app.usuarios import migrar
+    migrar()
     if db.asegurar_admin():
         print("Usuario administrador creado desde ADMIN_EMAIL.")
     else:

@@ -51,6 +51,8 @@ def _exigir_usuario(request):
     usuario = seguridad.usuario_actual(request)
     if not usuario:
         raise _IngresoRequerido()
+    from app.usuarios import verificar
+    verificar(request, usuario)
     return usuario
 
 
@@ -301,51 +303,8 @@ def descargar_lote(request: Request, lote_id: int):
 
 # -------------------------------------------------------------- usuarios
 
-@app.get("/usuarios", response_class=HTMLResponse)
-def ver_usuarios(request: Request):
-    usuario = _exigir_usuario(request)
-    usuarios = db.consultar(
-        "SELECT id, email, nombre, activo, created_at FROM usuarios ORDER BY id")
-    return plantillas.TemplateResponse(request, "usuarios.html",
-                                       _contexto(request, usuario, usuarios=usuarios))
-
-
-@app.post("/usuarios")
-def alta_usuario(request: Request, email: str = Form(...), nombre: str = Form(...),
-                 clave: str = Form(...)):
-    usuario = _exigir_usuario(request)
-    if len(clave) < 8:
-        return RedirectResponse("/usuarios?aviso=La+clave+debe+tener+8+caracteres",
-                                status_code=303)
-    existente = db.consultar_uno("SELECT id FROM usuarios WHERE email = %s",
-                                 (email.strip().lower(),))
-    if existente:
-        return RedirectResponse("/usuarios?aviso=El+correo+ya+esta+registrado",
-                                status_code=303)
-    fila = db.ejecutar(
-        "INSERT INTO usuarios (email, nombre, clave_hash, creado_por)"
-        " VALUES (%s, %s, %s, %s) RETURNING id",
-        (email.strip().lower(), nombre.strip(),
-         seguridad.hash_clave(clave), usuario["id"]))
-    auditoria.registrar(usuario["id"], "alta_usuario", "usuarios", fila["id"],
-                        {"email": email}, seguridad.ip_de(request))
-    return RedirectResponse("/usuarios?aviso=Usuario+creado", status_code=303)
-
-
-@app.post("/usuarios/{usuario_id}/estado")
-def cambiar_estado_usuario(request: Request, usuario_id: int,
-                           activo: int = Form(...)):
-    usuario = _exigir_usuario(request)
-    if usuario_id == usuario["id"] and not bool(activo):
-        return RedirectResponse(
-            "/usuarios?aviso=No+puede+desactivar+su+propio+usuario",
-            status_code=303)
-    db.ejecutar("UPDATE usuarios SET activo = %s, updated_at = now() WHERE id = %s",
-                (bool(activo), usuario_id))
-    auditoria.registrar(usuario["id"],
-                        "activar_usuario" if activo else "desactivar_usuario",
-                        "usuarios", usuario_id, {}, seguridad.ip_de(request))
-    return RedirectResponse("/usuarios?aviso=Estado+actualizado", status_code=303)
+from app import usuarios as administracion_usuarios
+administracion_usuarios.instalar(app, plantillas, _exigir_usuario, _contexto)
 
 
 # -------------------------------------------------------------- alertas

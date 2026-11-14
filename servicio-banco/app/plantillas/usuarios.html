@@ -1,33 +1,25 @@
 {% extends "base.html" %}
 {% block contenido %}
-<h2>Usuarios</h2>
-<section class="tarjeta">
-  <h3>Crear usuario</h3>
-  <form method="post" action="/usuarios" class="linea">
-    <div><label>Correo</label><input type="email" name="email" required></div>
-    <div><label>Nombre</label><input type="text" name="nombre" required></div>
-    <div><label>Clave (minimo 8)</label><input type="password" name="clave"
-         minlength="8" required></div>
-    <div><button type="submit">Crear</button></div>
-  </form>
-</section>
-<section class="tarjeta">
-  <table>
-    <tr><th>Id</th><th>Correo</th><th>Nombre</th><th>Estado</th><th>Creado</th><th></th></tr>
-    {% for u in usuarios %}
-    <tr>
-      <td>{{ u.id }}</td><td>{{ u.email }}</td><td>{{ u.nombre }}</td>
-      <td>{% if u.activo %}activo{% else %}desactivado{% endif %}</td>
-      <td>{{ u.created_at }}</td>
-      <td>
-        <form method="post" action="/usuarios/{{ u.id }}/estado" class="enlinea">
-          <input type="hidden" name="activo" value="{{ 0 if u.activo else 1 }}">
-          <button class="secundario">
-            {% if u.activo %}Desactivar{% else %}Activar{% endif %}</button>
-        </form>
-      </td>
-    </tr>
-    {% endfor %}
-  </table>
-</section>
+<h2>Usuarios y privilegios</h2>
+<p>Administrador: todas las acciones y usuarios. Operador: movimientos, archivos, conciliaciones y alertas. Consulta: lectura y reportes.</p>
+<section class="tarjeta"><h3>Crear usuario</h3>
+<form method="post" action="/usuarios" class="linea">
+<div><label>Nombre</label><input name="nombre" required></div>
+<div><label>Correo</label><input type="email" name="email" required></div>
+<div><label>Clave (mínimo 8)</label><input type="password" name="clave" minlength="8" required autocomplete="new-password"></div>
+<div><label>Perfil</label><select name="rol"><option value="consulta">Consulta</option><option value="operador">Operador</option><option value="administrador">Administrador</option></select></div>
+<button type="submit">Crear usuario</button></form></section>
+{% for u in usuarios %}
+<section class="tarjeta"><h3>{{ u.nombre }} · {{ u.rol }}</h3>
+<form method="post" action="/usuarios/{{ u.id }}/editar" class="linea">
+<div><label>Nombre</label><input name="nombre" value="{{ u.nombre }}" required></div>
+<div><label>Correo</label><input type="email" name="email" value="{{ u.email }}" required></div>
+<div><label>Nueva clave (opcional)</label><input type="password" name="clave" minlength="8" autocomplete="new-password"></div>
+<div><label>Perfil</label><select name="rol">{% for rol in ['consulta','operador','administrador'] %}<option value="{{ rol }}" {{ 'selected' if u.rol == rol else '' }}>{{ rol }}</option>{% endfor %}</select></div>
+<div><label>Estado</label><select name="activo"><option value="1" {{ 'selected' if u.activo else '' }}>Activo</option><option value="0" {{ 'selected' if not u.activo else '' }}>Desactivado</option></select></div>
+<button type="submit">Guardar cambios</button></form>
+{% if u.id != usuario.id %}
+<form method="post" action="/usuarios/{{ u.id }}/eliminar" onsubmit="return confirm('¿Eliminar el acceso? Se conservará el historial.');"><button type="submit" class="peligro">Eliminar usuario</button></form>
+{% endif %}</section>
+{% endfor %}
 {% endblock %}

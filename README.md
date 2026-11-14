@@ -594,3 +594,22 @@ deben subirse al repositorio.
 
 Para el procedimiento específico de Heroku también se puede consultar
 [`HEROKU.md`](HEROKU.md).
+# Usuarios y privilegios
+
+En las tres aplicaciones, el administrador puede crear usuarios, editar su
+correo, nombre, contraseña, perfil y estado, y eliminar su acceso.
+Los perfiles se verifican también en el servidor:
+
+- Administrador: todas las acciones, administración de usuarios y Reset.
+- Operador: trabajo con movimientos, lotes, archivos, conciliaciones y alertas.
+- Consulta: lectura de pantallas y descarga de reportes.
+
+La eliminación conserva la identidad histórica para auditoría y revoca las
+sesiones. Los cambios de perfil, contraseña o estado también revocan sesiones.
+No se permite eliminar o desactivar la propia cuenta administrativa, quitarse
+ese perfil ni dejar el sistema sin un administrador activo.
+
+Al actualizar una base existente, el primer usuario activo recibe el perfil
+Administrador y los restantes reciben Operador. En instalaciones nuevas,
+el usuario inicial de ADMIN_EMAIL es Administrador. Los usuarios se administran
+por separado en PyME, Banco y Conciliador.

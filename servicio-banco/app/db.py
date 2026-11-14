@@ -100,6 +100,6 @@ def asegurar_admin():
     from app import seguridad
     correo, clave = config.admin_inicial()
     ejecutar(
-        "INSERT INTO usuarios (email, nombre, clave_hash) VALUES (%s, %s, %s)",
+        "INSERT INTO usuarios (email, nombre, clave_hash, rol) VALUES (%s, %s, %s, 'administrador')",
         (correo, "Administrador", seguridad.hash_clave(clave)))
     return True

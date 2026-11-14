@@ -15,7 +15,7 @@
     <a class="{{ 'activo' if request.url.path == '/conciliacion' else '' }}" href="/conciliacion">Conciliación</a>
     <a class="{{ 'activo' if request.url.path == '/cadena' else '' }}" href="/cadena">Cadena</a>
     <a class="{{ 'activo' if request.url.path == '/visor' else '' }}" href="/visor">Visor</a>
-    <a class="{{ 'activo' if request.url.path == '/usuarios' else '' }}" href="/usuarios">Usuarios</a>
+    {% if usuario.rol == 'administrador' %}<a class="{{ 'activo' if request.url.path == '/usuarios' else '' }}" href="/usuarios">Usuarios</a>{% endif %}
     <a class="{{ 'activo' if request.url.path == '/alertas' else '' }}" href="/alertas">Alertas{% if alertas_nuevas %} <em>{{ alertas_nuevas }}</em>{% endif %}</a>
     <a class="{{ 'activo' if request.url.path == '/auditoria' else '' }}" href="/auditoria">Auditoría</a>
     <a class="{{ 'activo' if request.url.path == '/conexion' else '' }}" href="/conexion">Conexión</a>

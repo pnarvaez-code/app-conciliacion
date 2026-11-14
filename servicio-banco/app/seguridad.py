@@ -84,7 +84,7 @@ def usuario_actual(request: Request):
     if not token:
         return None
     fila = db.consultar_uno(
-        "SELECT u.id, u.email, u.nombre FROM sesiones s "
+        "SELECT u.id, u.email, u.nombre, u.rol FROM sesiones s "
         "JOIN usuarios u ON u.id = s.usuario_id "
         "WHERE s.token_hash = %s AND s.expira_en > now() AND u.activo",
         (_huella_token(token),))

@@ -21,6 +21,8 @@ def main():
         print("La base ya tenia el esquema; no se aplica migracion.")
     db.asegurar_esquema()
     db.asegurar_respaldo_archivos()
+    from app.usuarios import migrar
+    migrar()
 
     if db.asegurar_admin():
         print("Usuario administrador creado desde ADMIN_EMAIL.")
