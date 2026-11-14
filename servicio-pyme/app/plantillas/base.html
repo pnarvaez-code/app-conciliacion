@@ -8,7 +8,7 @@
 </head>
 <body>
 <nav class="barra">
-  <a class="marca" href="/"><span class="marca-icono">P</span><span><b>{{ servicio }}</b><small>Gestión de ventas</small></span></a>
+  <a class="marca" href="/"><span><b>{{ servicio }}</b><small>Gestión de ventas</small></span></a>
   <div class="nav-enlaces">
     <a class="{{ 'activo' if request.url.path == '/' else '' }}" href="/">Ventas</a>
     <a class="{{ 'activo' if request.url.path == '/lotes' else '' }}" href="/lotes">Cierres y sellos</a>

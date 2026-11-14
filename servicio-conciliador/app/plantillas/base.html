@@ -8,7 +8,7 @@
 </head>
 <body>
 <nav class="barra">
-  <a class="marca" href="/"><span class="marca-icono">C</span><span><b>{{ servicio }}</b><small>Control de conciliación</small></span></a>
+  <a class="marca" href="/"><span><b>{{ servicio }}</b><small>Control de conciliación</small></span></a>
   <div class="nav-enlaces">
     <a class="{{ 'activo' if request.url.path == '/' else '' }}" href="/">Panel</a>
     <a class="{{ 'activo' if request.url.path == '/recepciones' else '' }}" href="/recepciones">Recepciones</a>
