@@ -11,9 +11,9 @@ agrega una segunda barrera.
 """
 import hmac
 
-from fastapi import APIRouter, Header, HTTPException
+from fastapi import APIRouter, Header, HTTPException, Response
 
-from app import cadena, config
+from app import archivos, cadena, config, db
 
 router = APIRouter(prefix="/interno")
 
@@ -61,3 +61,23 @@ def sello(lote_codigo: str, x_servicio_token: str = Header(default="")):
     if not sello_lote:
         raise HTTPException(status_code=404, detail="lote sin sello")
     return sello_lote
+
+
+@router.get("/lotes/ultimo/archivo")
+def ultimo_archivo_emitido(x_servicio_token: str = Header(default="")):
+    """Entrega el último lote sellado al Conciliador por la API privada."""
+    _verificar_token(x_servicio_token)
+    lote = db.consultar_uno(
+        "SELECT l.codigo, a.* FROM lotes l JOIN archivos a ON a.id = l.archivo_id "
+        "ORDER BY l.id DESC LIMIT 1")
+    if not lote:
+        raise HTTPException(status_code=404, detail="no hay lotes emitidos")
+    try:
+        contenido = archivos.obtener_contenido(lote)
+    except FileNotFoundError as error:
+        raise HTTPException(status_code=409, detail="archivo emitido no disponible") from error
+    return Response(content=contenido, media_type="text/csv", headers={
+        "Content-Disposition": "attachment; filename=%s" % lote["nombre"],
+        "X-Lote-Codigo": lote["codigo"],
+        "X-Archivo-SHA256": lote["sha256"],
+    })

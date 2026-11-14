@@ -29,7 +29,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
 from app import (alertas, auditoria, cadena, conciliacion, config, db, internos,
-                 recepciones, reporte, reset)
+                 integracion, recepciones, reporte, reset)
 
 BASE = Path(__file__).resolve().parent
 app = FastAPI(title="Servicio CONCILIADOR - herramienta del auditor")
@@ -157,6 +157,34 @@ async def subir_recepcion(request: Request, origen: str = Form(...),
              "bytes": len(contenido), "motivo": str(error)},
             seguridad.ip_de(request))
         aviso = "No se pudo recibir el archivo: %s" % error
+    from urllib.parse import quote_plus
+    return RedirectResponse("/recepciones?aviso=%s" % quote_plus(aviso),
+                            status_code=303)
+
+
+@app.post("/recepciones/obtener")
+def obtener_recepcion(request: Request, origen: str = Form(...)):
+    """Recibe el último archivo emitido desde la API interna de cada parte."""
+    usuario = _exigir_usuario(request)
+    try:
+        nombre, contenido, lote_remoto = integracion.obtener_ultimo(origen)
+        # El archivo se valida contra nuestra copia de la cadena. Al obtenerlo
+        # desde el emisor, primero actualizamos esa copia para incluir el sello
+        # recién emitido y evitar un falso estado ``sin_sello``.
+        sincronizacion = cadena.sincronizar_con_pares()
+        recepcion = recepciones.recibir(origen, nombre, contenido, usuario["id"],
+                                        seguridad.ip_de(request))
+        auditoria.registrar(
+            usuario["id"], "obtener_recepcion_api", "recepciones", recepcion["id"],
+            {"origen": origen.upper(), "archivo": nombre,
+             "lote_remoto": lote_remoto, "estado": recepcion["estado_integridad"],
+             "sincronizacion": sincronizacion},
+            seguridad.ip_de(request))
+        aviso = "Archivo obtenido desde %s: %s (%s)" % (
+            "PyME" if origen.upper() == "EMPRESA" else "Banco", nombre,
+            recepcion["estado_integridad"])
+    except ValueError as error:
+        aviso = "No se pudo obtener el archivo: %s" % error
     from urllib.parse import quote_plus
     return RedirectResponse("/recepciones?aviso=%s" % quote_plus(aviso),
                             status_code=303)

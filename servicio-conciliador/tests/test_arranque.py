@@ -49,6 +49,21 @@ def main():
     assert respuesta.headers["location"] == "/login"
     print("Recepcion de archivos: ruta protegida y multipart correcta")
 
+    # El Conciliador puede obtener el último archivo desde la API privada de
+    # cada emisor y lo procesa por la misma verificación que una carga manual.
+    recepcion_api = {"id": 9, "estado_integridad": "intacto"}
+    with patch.object(principal, "_exigir_usuario", return_value={"id": 1}), \
+         patch.object(principal.integracion, "obtener_ultimo",
+                      return_value=("ventas.csv", b"fecha;monto;referencia;descripcion\n"
+                                   b"2026-11-11;100;FV-1;VENTA\n", "V-2026-11-11-01")), \
+         patch.object(principal.cadena, "sincronizar_con_pares", return_value=[]), \
+         patch.object(principal.recepciones, "recibir", return_value=recepcion_api), \
+         patch.object(principal.auditoria, "registrar"):
+        respuesta = cliente.post("/recepciones/obtener", data={"origen": "EMPRESA"})
+    assert respuesta.status_code == 303, respuesta.status_code
+    assert "Archivo+obtenido+desde+PyME" in respuesta.headers["location"]
+    print("Obtencion por API desde PyME: archivo recibido y verificado")
+
     with patch.object(principal, "_exigir_usuario", return_value={"id": 1}), \
          patch.object(principal.recepciones, "recibir",
                       side_effect=ValueError("formato no soportado")), \

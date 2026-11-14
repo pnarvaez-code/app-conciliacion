@@ -21,6 +21,25 @@
 </section>
 
 <section class="tarjeta">
+  <h3>Obtener desde los sistemas conectados</h3>
+  <p class="tenue">Use esta opción para traer el último lote sellado de PyME o
+  el último extracto sellado del Banco. La conexión usa la API interna con
+  token de servicio; al recibirlo se valida nuevamente su SHA-256.</p>
+  <div class="linea">
+    <form method="post" action="/recepciones/obtener" class="enlinea">
+      <input type="hidden" name="origen" value="EMPRESA">
+      <button type="submit">Obtener último lote de PyME</button>
+    </form>
+    <form method="post" action="/recepciones/obtener" class="enlinea">
+      <input type="hidden" name="origen" value="BANCO">
+      <button type="submit">Obtener último extracto del Banco</button>
+    </form>
+  </div>
+  <p class="tenue">Antes de usarlo, emita el lote o extracto en su aplicación
+  de origen y confirme que las tres aplicaciones muestran conexión establecida.</p>
+</section>
+
+<section class="tarjeta">
   <h3>Historial de recepciones</h3>
   <table>
     <tr><th>Fecha</th><th>Origen</th><th>Archivo</th><th>Lote</th>
