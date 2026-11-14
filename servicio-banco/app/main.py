@@ -100,6 +100,13 @@ def salir(request: Request):
     return respuesta
 
 
+@app.post("/sesion/actividad", status_code=204)
+def actividad_sesion(request: Request):
+    """Renueva la sesión mientras una pestaña de Banco sigue abierta."""
+    _exigir_usuario(request)
+    return Response(status_code=204)
+
+
 # ---------------------------------------------------------------- panel
 
 @app.get("/", response_class=HTMLResponse)

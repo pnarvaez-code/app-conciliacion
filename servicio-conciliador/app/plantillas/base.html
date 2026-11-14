@@ -39,6 +39,11 @@ document.querySelectorAll("form[data-carga-archivo]").forEach(function (formular
     if (boton) { boton.disabled = true; boton.textContent = "Verificando archivo…"; }
   });
 });
+// Una pestaña abierta mantiene la sesión vigente. Sin latidos (por ejemplo,
+// al cerrarla), el servidor invalida la sesión en aproximadamente dos minutos.
+window.setInterval(function () {
+  fetch("/sesion/actividad", {method: "POST", credentials: "same-origin"}).catch(function () {});
+}, 30000);
 </script>
 </body>
 </html>

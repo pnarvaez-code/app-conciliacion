@@ -25,7 +25,9 @@ from itsdangerous import BadSignature, URLSafeSerializer
 from app import config, db
 
 CLAVE_COOKIE = "sesion_pyme"
-DURACION_SESION = datetime.timedelta(hours=8)
+# La sesión se renueva mientras una pestaña de la aplicación sigue abierta.
+# Sin latidos (por ejemplo, al cerrarla) vence en dos minutos.
+DURACION_SESION = datetime.timedelta(minutes=2)
 LIMITE_BCRYPT = 72   # bcrypt solo considera los primeros 72 bytes de la clave
 LIMITE_ARCHIVO = 5 * 1024 * 1024
 
@@ -86,6 +88,10 @@ def usuario_actual(request: Request):
         "JOIN usuarios u ON u.id = s.usuario_id "
         "WHERE s.token_hash = %s AND s.expira_en > now() AND u.activo",
         (_huella_token(token),))
+    if fila:
+        db.ejecutar("UPDATE sesiones SET expira_en = %s WHERE token_hash = %s",
+                    (datetime.datetime.now(datetime.timezone.utc) + DURACION_SESION,
+                     _huella_token(token)))
     return fila
 
 
