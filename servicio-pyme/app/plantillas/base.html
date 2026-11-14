@@ -17,7 +17,7 @@
     <a class="{{ 'activo' if request.url.path == '/auditoria' else '' }}" href="/auditoria">Auditoría</a>
     <a class="{{ 'activo' if request.url.path == '/conexion' else '' }}" href="/conexion">Conexión</a>
   </div>
-  <div class="nav-acciones"><a class="boton-reporte" href="/reporte">Reporte</a><a class="boton-reset" href="/reset">Reset</a><span class="salir"><a href="/salir">{{ usuario.email }} · Salir</a></span></div>
+  <div class="nav-acciones"><a class="boton-reporte" href="/reporte">Reporte</a>{% if usuario.rol == 'administrador' %}<a class="boton-reset" href="/reset">Reset</a>{% endif %}<span class="salir"><a href="/salir">{{ usuario.email }} · Salir</a></span></div>
 </nav>
 <main>
 {% if request.query_params.get('aviso') %}

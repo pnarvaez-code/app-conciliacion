@@ -13,7 +13,7 @@ def ejecutar(email, clave, usuario_id, ip):
         with conexion.cursor() as cursor:
             cursor.execute(
                 "SELECT id, clave_hash FROM usuarios "
-                "WHERE id = %s AND email = %s AND activo",
+                "WHERE id = %s AND email = %s AND activo AND rol = 'administrador' AND NOT eliminado",
                 (usuario_id, email.strip().lower()))
             usuario = cursor.fetchone()
             if not usuario or not seguridad.verificar_clave(
