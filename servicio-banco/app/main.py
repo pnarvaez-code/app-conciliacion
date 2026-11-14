@@ -145,6 +145,7 @@ async def importar_movimientos(request: Request, texto: str = Form(""),
             origen = "texto pegado"
         else:
             raise ValueError("ingrese texto o seleccione un archivo CSV/XML")
+        sin_referencia = sum(not fila["referencia"] for fila in filas)
         creados, omitidos = importar.importar_filas(filas, usuario["id"], origen)
     except (UnicodeDecodeError, ValueError) as error:
         from urllib.parse import quote_plus
@@ -156,6 +157,17 @@ async def importar_movimientos(request: Request, texto: str = Form(""),
             status_code=303)
     from urllib.parse import quote_plus
     aviso = "Importados %d movimientos, %d omitidos por referencia" % (creados, omitidos)
+    if sin_referencia:
+        alertas.crear(
+            "operativa", "media", "Movimientos sin referencia detectados",
+            "%d movimiento(s) de %s no incluyen referencia. La carga es válida, "
+            "pero requerirá cruce seguro por monto y fecha o revisión manual."
+            % (sin_referencia, origen), referencia=origen, usuario_id=usuario["id"])
+        auditoria.registrar(
+            usuario["id"], "importar_sin_referencia", "movimientos", None,
+            {"archivo": origen, "sin_referencia": sin_referencia},
+            seguridad.ip_de(request))
+        aviso += ". Alerta: %d sin referencia" % sin_referencia
     return RedirectResponse("/?aviso=%s" % quote_plus(aviso), status_code=303)
 
 

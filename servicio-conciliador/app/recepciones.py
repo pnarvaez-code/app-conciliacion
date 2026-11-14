@@ -27,7 +27,8 @@ def recibir(origen, nombre, contenido, usuario_id, ip=None):
         raise ValueError("el origen debe ser EMPRESA o BANCO")
     archivo = archivos.guardar(nombre, contenido, usuario_id)
     try:
-        carga.leer(nombre, contenido.decode("utf-8", errors="replace"))
+        movimientos, _formato = carga.leer(
+            nombre, contenido.decode("utf-8", errors="replace"))
     except ValueError as error:
         detalle = "Archivo %s rechazado por formato: %s" % (nombre, error)
         recepcion = db.ejecutar(
@@ -74,6 +75,15 @@ def recibir(origen, nombre, contenido, usuario_id, ip=None):
                       "No hay bloques de ese origen en la copia local; "
                       "sincronice la cadena y vuelva a verificar.",
                       referencia=nombre, usuario_id=usuario_id)
+    sin_referencia = sum(not movimiento["referencia"] for movimiento in movimientos)
+    if sin_referencia:
+        alertas.crear(
+            "operativa", "media", "Archivo con movimientos sin referencia",
+            "%s de %s contiene %d movimiento(s) sin referencia. El archivo es "
+            "válido; la conciliación solo podrá cruzarlos si monto y fecha dan "
+            "una coincidencia única, de lo contrario quedarán para revisión."
+            % (nombre, origen, sin_referencia),
+            referencia=lote_codigo or nombre, usuario_id=usuario_id)
     return recepcion
 
 
