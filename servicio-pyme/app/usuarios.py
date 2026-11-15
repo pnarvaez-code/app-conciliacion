@@ -21,6 +21,8 @@ def migrar():
             c.execute("SELECT pg_advisory_xact_lock(781240)")
             c.execute("ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS rol TEXT")
             c.execute("ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS eliminado BOOLEAN NOT NULL DEFAULT FALSE")
+            c.execute("ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS central_id BIGINT UNIQUE")
+            c.execute("ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS central_version TEXT")
             c.execute("UPDATE usuarios SET rol=CASE WHEN id=(SELECT MIN(id) FROM usuarios WHERE activo) "
                       "THEN 'administrador' ELSE 'operador' END WHERE rol IS NULL")
             c.execute("ALTER TABLE usuarios ALTER COLUMN rol SET DEFAULT 'operador'")

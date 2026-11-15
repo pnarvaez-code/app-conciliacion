@@ -78,9 +78,15 @@ def mostrar_login(request: Request):
 
 @app.post("/login")
 def ingresar(request: Request, email: str = Form(...), clave: str = Form(...)):
-    usuario = db.consultar_uno(
-        "SELECT * FROM usuarios WHERE email = %s AND activo", (email.strip().lower(),))
-    if not usuario or not seguridad.verificar_clave(clave, usuario["clave_hash"]):
+    from app import identidad
+    try:
+        usuario = identidad.autenticar(email, clave)
+    except psycopg.errors.UniqueViolation:
+        return plantillas.TemplateResponse(
+            request, "login.html",
+            {"error": "El correo central coincide con otra cuenta local. Revise las cuentas antes de vincular.",
+             "servicio": config.NOMBRE_SERVICIO}, status_code=409)
+    if not usuario:
         auditoria.registrar(None, "ingreso_fallido", "usuarios", None,
                             {"email": email}, seguridad.ip_de(request))
         return plantillas.TemplateResponse(

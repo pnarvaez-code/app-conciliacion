@@ -84,11 +84,14 @@ def usuario_actual(request: Request):
     if not token:
         return None
     fila = db.consultar_uno(
-        "SELECT u.id, u.email, u.nombre, u.rol FROM sesiones s "
+        "SELECT u.id, u.email, u.nombre, u.rol, u.central_id, u.central_version FROM sesiones s "
         "JOIN usuarios u ON u.id = s.usuario_id "
         "WHERE s.token_hash = %s AND s.expira_en > now() AND u.activo",
         (_huella_token(token),))
     if fila:
+        from app import identidad
+        if not identidad.validar_sesion(fila):
+            return None
         db.ejecutar("UPDATE sesiones SET expira_en = %s WHERE token_hash = %s",
                     (datetime.datetime.now(datetime.timezone.utc) + DURACION_SESION,
                      _huella_token(token)))

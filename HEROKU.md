@@ -1,5 +1,24 @@
 # Despliegue en Heroku
 
+## Acceso unificado
+
+El Conciliador administra las identidades de las tres aplicaciones. Con
+URL_CONCILIADOR configurada, PyME y Banco validan correo y contraseña mediante
+la API privada del Conciliador y vinculan una cuenta local para conservar las
+relaciones de auditoría. Los cambios de correo, clave, perfil o estado invalidan
+las sesiones anteriores al siguiente acceso protegido. Las contraseñas no se
+incluyen en las respuestas de la API.
+
+Para esta actualización despliegue primero Conciliador y después PyME y Banco.
+Las tres aplicaciones deben compartir TOKEN_SERVICIO. PyME y Banco deben tener
+URL_CONCILIADOR con la URL HTTPS correcta. Después cierre sesión y vuelva a
+entrar con el usuario administrado en Conciliador.
+
+Este acceso necesita que el Conciliador esté disponible y puede despertar su
+dyno al iniciar sesión o validar una sesión de PyME o Banco. Si no está disponible,
+se rechaza temporalmente el acceso; no se aceptan contraseñas locales antiguas.
+Sin URL_CONCILIADOR se conserva el modo aislado de desarrollo.
+
 El repositorio contiene tres servicios independientes. En Heroku se despliega el mismo repositorio como tres aplicaciones: PYME, banco y conciliador. Cada aplicacion usa el proceso definido en Procfile y selecciona su servicio con `SERVICIO`, `APP_SERVICE` o `SERVICE`, aceptando `pyme`, `banco`, `conciliador` y sus nombres `servicio-*`. No se despliega docker-compose.yml en Heroku; Compose se conserva para desarrollo local.
 
 ## 1. Subir el proyecto a GitHub
