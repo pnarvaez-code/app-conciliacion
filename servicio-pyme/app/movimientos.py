@@ -45,7 +45,13 @@ def vista_lotes(seleccion=None):
     opciones = [dict(lote, numero=n, etiqueta="Lote %d" % n)
                 for n, lote in enumerate(lotes, 1)]
     seleccion = seleccion if seleccion is not None else ("1" if opciones else "pendientes")
-    if seleccion == "pendientes":
+    if seleccion == "todos":
+        etiquetas = {lote["id"]: lote["etiqueta"] for lote in opciones}
+        filas = db.consultar("SELECT * FROM movimientos ORDER BY id")
+        filas = [dict(fila, lote_etiqueta=etiquetas.get(fila["lote_id"], "Sin lote"))
+                 for fila in filas]
+        activo = "todos"
+    elif seleccion == "pendientes":
         filas = db.consultar("SELECT * FROM movimientos WHERE lote_id IS NULL ORDER BY id")
         activo = "pendientes"
     else:

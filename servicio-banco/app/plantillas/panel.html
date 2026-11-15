@@ -46,16 +46,19 @@
 <section class="tarjeta">
   <h3>Listado</h3>
   <nav class="linea" aria-label="Filtrar movimientos por lote">
+    <a href="/?lote_activo=todos" class="etiqueta {{ 'sellado' if lote_activo == 'todos' else 'pendiente' }}"
+       {% if lote_activo == 'todos' %}aria-current="page"{% endif %}>Ver todo</a>
     {% for lote in lotes_filtro %}
     <a href="/?lote_activo={{ lote.numero }}" class="etiqueta {{ 'sellado' if lote_activo == lote.numero else 'pendiente' }}"
        {% if lote_activo == lote.numero %}aria-current="page"{% endif %}>
-      {{ 'Consultar' if lote.numero == 3 else 'Trabajar en' }} {{ lote.etiqueta }}
+      {{ lote.etiqueta }}
     </a>
     {% endfor %}
     <a href="/?lote_activo=pendientes" class="etiqueta {{ 'sellado' if lote_activo == 'pendientes' else 'pendiente' }}"
        {% if lote_activo == 'pendientes' %}aria-current="page"{% endif %}>Pendientes sin lote</a>
   </nav>
-  <p class="tenue">Mostrando {{ movimientos|length }} movimiento(s).
+  <p class="tenue">Filtro: {{ 'Todos los movimientos' if lote_activo == 'todos' else ('Pendientes sin lote' if lote_activo == 'pendientes' else 'Lote ' ~ lote_activo) }}.
+    Mostrando {{ movimientos|length }} movimiento(s).
     Los movimientos sellados se consultan; las correcciones requieren reemisión.</p>
   <table>
     <tr><th>NRO</th><th>Fecha</th><th>Monto</th><th>Referencia</th><th>Descripcion</th>
