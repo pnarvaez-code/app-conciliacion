@@ -115,7 +115,7 @@ def actividad_sesion(request: Request):
 def panel(request: Request):
     usuario = _exigir_usuario(request)
     return plantillas.TemplateResponse(request, "panel.html", _contexto(
-        request, usuario, movimientos=movimientos.listar(),
+        request, usuario, **movimientos.vista_lotes(request.query_params.get("lote_activo")),
         resumen=movimientos.resumen(),
         proxima_referencia=movimientos.proxima_referencia()))
 

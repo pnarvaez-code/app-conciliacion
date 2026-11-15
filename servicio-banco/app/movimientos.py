@@ -39,6 +39,32 @@ def listar(limite=300):
         "ORDER BY m.fecha DESC, m.id DESC LIMIT %s", (limite,))
 
 
+def vista_lotes(seleccion=None):
+    """Etiqueta lotes en orden de creación y filtra en SQL sin truncar filas."""
+    from fastapi import HTTPException
+    lotes = db.consultar("SELECT id, codigo FROM lotes ORDER BY id ASC")
+    opciones = [dict(lote, numero=n, etiqueta="Lote %d" % n)
+                for n, lote in enumerate(lotes, 1)]
+    seleccion = seleccion if seleccion is not None else ("1" if opciones else "pendientes")
+    if seleccion == "pendientes":
+        filas = db.consultar("SELECT * FROM movimientos WHERE lote_id IS NULL ORDER BY id")
+        activo = "pendientes"
+    else:
+        try:
+            numero = int(seleccion)
+        except (ValueError, TypeError):
+            raise HTTPException(400, "El lote seleccionado debe ser un número.")
+        if numero < 1 or numero > len(opciones):
+            raise HTTPException(404, "El lote seleccionado no existe.")
+        lote = opciones[numero - 1]
+        filas = db.consultar(
+            "SELECT * FROM movimientos WHERE lote_id = %s ORDER BY id",
+            (lote["id"],))
+        filas = [dict(fila, lote_etiqueta=lote["etiqueta"]) for fila in filas]
+        activo = numero
+    return {"movimientos": filas, "lotes_filtro": opciones, "lote_activo": activo}
+
+
 def pendientes():
     """Movimientos sin lote, en orden de alta (los del proximo cierre)."""
     return db.consultar(

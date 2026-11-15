@@ -45,18 +45,31 @@
 
 <section class="tarjeta">
   <h3>Listado</h3>
+  <nav class="linea" aria-label="Filtrar movimientos por lote">
+    {% for lote in lotes_filtro %}
+    <a href="/?lote_activo={{ lote.numero }}" class="etiqueta {{ 'sellado' if lote_activo == lote.numero else 'pendiente' }}"
+       {% if lote_activo == lote.numero %}aria-current="page"{% endif %}>
+      {{ 'Consultar' if lote.numero == 3 else 'Trabajar en' }} {{ lote.etiqueta }}
+    </a>
+    {% endfor %}
+    <a href="/?lote_activo=pendientes" class="etiqueta {{ 'sellado' if lote_activo == 'pendientes' else 'pendiente' }}"
+       {% if lote_activo == 'pendientes' %}aria-current="page"{% endif %}>Pendientes sin lote</a>
+  </nav>
+  <p class="tenue">Mostrando {{ movimientos|length }} movimiento(s).
+    Los movimientos sellados se consultan; las correcciones requieren reemisión.</p>
   <table>
-    <tr><th>Fecha</th><th>Monto</th><th>Referencia</th><th>Descripcion</th>
+    <tr><th>NRO</th><th>Fecha</th><th>Monto</th><th>Referencia</th><th>Descripcion</th>
         <th>Estado</th><th>Lote</th><th></th></tr>
     {% for m in movimientos %}
     <tr>
+      <td>{{ loop.index }}</td>
       <td>{{ m.fecha }}</td>
       <td class="numero">{{ "{:,}".format(m.monto).replace(",", ".") }}</td>
       <td>{{ m.referencia }}</td>
       <td>{{ m.descripcion }}</td>
       <td>{% if m.estado == 'pendiente' %}<span class="etiqueta pendiente">pendiente</span>
           {% else %}<span class="etiqueta sellado">en lote sellado</span>{% endif %}</td>
-      <td>{{ m.lote_codigo or '' }}</td>
+      <td>{{ m.lote_etiqueta or 'Sin lote' }}</td>
       <td>
         {% if m.estado == 'pendiente' %}
         <a href="/movimientos/{{ m.id }}/editar">Editar</a>
@@ -66,6 +79,8 @@
         {% endif %}
       </td>
     </tr>
+    {% else %}
+    <tr><td colspan="8">No hay movimientos en esta selección.</td></tr>
     {% endfor %}
   </table>
 </section>
