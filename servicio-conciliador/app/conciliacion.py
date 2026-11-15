@@ -144,7 +144,8 @@ def conciliacion_existente(recepcion_empresa_id, recepcion_banco_id):
 def listar(limite=50):
     return db.consultar(
         "SELECT c.*, u.email AS ejecutada_por_email,"
-        " ae.nombre AS archivo_empresa, ab.nombre AS archivo_banco"
+        " ae.nombre AS archivo_empresa, ab.nombre AS archivo_banco,"
+        " re.lote_codigo AS lote_empresa, rb.lote_codigo AS lote_banco"
         " FROM conciliaciones c "
         "LEFT JOIN usuarios u ON u.id = c.ejecutada_por "
         "LEFT JOIN recepciones re ON re.id = c.recepcion_empresa_id "

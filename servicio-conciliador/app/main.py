@@ -220,7 +220,16 @@ def eliminar_recepcion(request: Request, recepcion_id: int):
 def ver_conciliacion(request: Request):
     usuario = _exigir_usuario(request)
     filtro = request.query_params.get("filtro", "todos")
-    lista = conciliacion.listar(limite=20)
+    lista = conciliacion.listar(limite=10000)
+    lote_resultado = request.query_params.get("lote_resultado", "")
+    opciones_lotes = sorted({(origen, fila[campo])
+                            for fila in lista
+                            for origen, campo in [("EMPRESA", "lote_empresa"), ("BANCO", "lote_banco")]
+                            if fila.get(campo)})
+    if lote_resultado:
+        lista = [fila for fila in lista if lote_resultado in (
+            "EMPRESA:" + (fila.get("lote_empresa") or ""),
+            "BANCO:" + (fila.get("lote_banco") or ""))]
     pares = pendientes = por_tipo = None
     operacion = request.query_params.get("operacion")
     ultima = None
@@ -266,6 +275,16 @@ def ver_conciliacion(request: Request):
         filtro = "todos"
     fuente_empresa = recepciones.ultima_intacta("EMPRESA")
     fuente_banco = recepciones.ultima_intacta("BANCO")
+    tipo_pendiente = request.query_params.get("tipo_pendiente", "")
+    origen_pendiente = request.query_params.get("origen_pendiente", "")
+    nivel_cruce = request.query_params.get("nivel_cruce", "")
+    tipos_pendientes = sorted((por_tipo or {}).keys())
+    if pendientes is not None:
+        pendientes = [p for p in pendientes
+                      if (not tipo_pendiente or p["tipo_diferencia"] == tipo_pendiente)
+                      and (not origen_pendiente or p["origen"] == origen_pendiente)]
+    if pares is not None and nivel_cruce:
+        pares = [p for p in pares if str(p["nivel"]) == nivel_cruce]
     puede_ejecutar = bool(fuente_empresa and fuente_banco and not
                           conciliacion.conciliacion_existente(
                               fuente_empresa["id"], fuente_banco["id"]))
@@ -274,6 +293,9 @@ def ver_conciliacion(request: Request):
         pendientes=pendientes, por_tipo=por_tipo,
         recepciones=recepciones_recientes[:8], rechazos=rechazos,
         lotes=lotes, fuentes=fuentes, filtro=filtro,
+        opciones_lotes=opciones_lotes, lote_resultado=lote_resultado,
+        tipos_pendientes=tipos_pendientes, tipo_pendiente=tipo_pendiente,
+        origen_pendiente=origen_pendiente, nivel_cruce=nivel_cruce,
         puede_ejecutar=puede_ejecutar))
 
 
