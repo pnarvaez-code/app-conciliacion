@@ -535,12 +535,22 @@ function pintar(datos) {
     listaDiferencias.appendChild(alerta);
   });
 }
+var ultimaInteraccion = Date.now();
+var refrescoEnCurso = false;
+["pointerdown", "keydown", "scroll", "touchstart"].forEach(function (evento) {
+  document.addEventListener(evento, function () { ultimaInteraccion = Date.now(); }, {passive: true});
+});
 function refrescar() {
-  fetch("/visor/estado").then(function (r) { return r.json(); })
-    .then(pintar).catch(function () { });
+  if (document.hidden || Date.now() - ultimaInteraccion > 90000 || refrescoEnCurso) return;
+  refrescoEnCurso = true;
+  fetch("/visor/estado", {redirect: "manual"}).then(function (r) {
+    if (!r.ok) throw new Error("Sesión no disponible");
+    return r.json();
+  }).then(pintar).catch(function () { })
+    .finally(function () { refrescoEnCurso = false; });
 }
 refrescar();
-setInterval(refrescar, 3000);
+setInterval(refrescar, 30000);
 </script>
 </body>
 </html>

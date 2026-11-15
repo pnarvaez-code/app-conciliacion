@@ -39,11 +39,15 @@ document.querySelectorAll("form[data-carga-archivo]").forEach(function (formular
     if (boton) { boton.disabled = true; boton.textContent = "Verificando archivo…"; }
   });
 });
-// Una pestaña abierta mantiene la sesión vigente. Sin latidos (por ejemplo,
-// al cerrarla), el servidor invalida la sesión en aproximadamente dos minutos.
+// Renovar únicamente durante uso real; una pestaña abandonada permite reposo.
+var ultimaInteraccion = Date.now();
+["pointerdown", "keydown", "scroll", "touchstart"].forEach(function (evento) {
+  document.addEventListener(evento, function () { ultimaInteraccion = Date.now(); }, {passive: true});
+});
 window.setInterval(function () {
-  fetch("/sesion/actividad", {method: "POST", credentials: "same-origin"}).catch(function () {});
-}, 30000);
+  if (document.hidden || Date.now() - ultimaInteraccion > 90000) return;
+  fetch("/sesion/actividad", {method: "POST", credentials: "same-origin", redirect: "manual"}).catch(function () {});
+}, 45000);
 </script>
 </body>
 </html>

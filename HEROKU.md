@@ -120,10 +120,23 @@ redeploya las tres aplicaciones para que los procesos lean la configuración.
 
 ### Reposo y consumo
 
-El código no ejecuta pings, cron interno ni sincronización periódica: abrir
+El código no ejecuta cron interno ni sincronización periódica entre servicios: abrir
 PYME no llama a Banco o Conciliador, y abrir Conciliador no despierta a los
 otros dos servicios. Por tanto, cada URL puede permanecer inactiva de forma
 independiente.
+
+Las renovaciones de sesión y el Visor solo consultan mientras la pestaña está
+visible y hubo interacción en los últimos 90 segundos. El Visor actualiza cada
+30 segundos y evita consultas superpuestas. Tras la inactividad, las sesiones
+caducan y es necesario volver a ingresar. Esto evita que pestañas abandonadas
+mantengan el dyno despierto. No configure monitores externos para hacer pings.
+
+El presupuesto debe contemplar dynos y PostgreSQL por separado. Eco comparte
+1.000 horas mensuales entre las apps de la cuenta y cuesta US$5/mes según la
+página de precios consultada. Tres bases Essential-0 de US$5/mes cada una más
+Eco suman aproximadamente US$20/mes antes de impuestos o créditos. El reposo
+no suspende el cargo de PostgreSQL. Revise Billing y Add-ons antes de contratar.
+Fuente: https://www.heroku.com/pricing/
 
 El reposo automático lo determina el plan de Heroku, no la aplicación. En un
 plan que admite suspensión por inactividad (por ejemplo, Eco), Heroku detiene
