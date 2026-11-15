@@ -15,6 +15,7 @@ Todas las acciones quedan auditadas con el usuario que las ejecuta.
 """
 import csv
 import datetime
+from app import horario
 import io
 import logging
 from pathlib import Path
@@ -67,7 +68,7 @@ def _emitir(codigo, filas, usuario_id, ip, reemision):
                     filas = cursor.fetchall()
                     if not filas:
                         raise ValueError("No hay ventas pendientes de cierre.")
-                    hoy = datetime.date.today().isoformat()
+                    hoy = horario.hoy().isoformat()
                     cursor.execute(
                         "SELECT COUNT(*) AS total FROM lotes WHERE codigo LIKE %s",
                         ("V-%s%%" % hoy,))
@@ -144,7 +145,7 @@ def _emitir(codigo, filas, usuario_id, ip, reemision):
 
 def _codigo_nuevo():
     """Codigo del lote del dia: V-AAAA-MM-DD-NN."""
-    hoy = datetime.date.today().isoformat()
+    hoy = horario.hoy().isoformat()
     fila = db.consultar_uno(
         "SELECT COUNT(*) AS total FROM lotes WHERE codigo LIKE %s",
         ("V-%s%%" % hoy,))
@@ -159,7 +160,7 @@ def _siguiente_version(codigo):
 
 def _nombre_archivo(version):
     """Nombre descargable: servicio y fecha del cierre."""
-    fecha = datetime.date.today().isoformat()
+    fecha = horario.hoy().isoformat()
     sufijo = "" if version == 1 else "-v%d" % version
     return "pyme-%s%s.csv" % (fecha, sufijo)
 

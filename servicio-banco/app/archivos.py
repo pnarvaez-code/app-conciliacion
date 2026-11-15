@@ -9,6 +9,7 @@ La huella se calcula siempre sobre el contenido exacto que se guarda: si
 alguien modifica el archivo en disco, la verificacion lo detecta.
 """
 import datetime
+from app import horario
 from pathlib import Path
 
 from app import config, db
@@ -21,7 +22,7 @@ def guardar(nombre, contenido, origen, usuario_id):
     carpeta.mkdir(parents=True, exist_ok=True)
     # Los microsegundos evitan que dos emisiones del mismo nombre, creadas en
     # el mismo segundo, compartan ruta y sobrescriban su evidencia local.
-    marca = datetime.datetime.now().strftime("%Y%m%d%H%M%S%f")
+    marca = horario.ahora().strftime("%Y%m%d%H%M%S%f")
     ruta = carpeta / ("%s_%s" % (marca, nombre))
     datos = contenido.encode("utf-8") if isinstance(contenido, str) else contenido
     with ruta.open("wb") as archivo:

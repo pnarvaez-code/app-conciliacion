@@ -37,6 +37,8 @@ app.mount("/estaticos", StaticFiles(directory=str(BASE / "estaticos")),
           name="estaticos")
 plantillas = Jinja2Templates(directory=str(BASE / "plantillas"))
 app.include_router(internos.router)
+from app import horario
+plantillas.env.finalize = horario.presentar
 
 from app import seguridad  # se importa despues para evitar ciclos en pruebas
 
@@ -520,7 +522,7 @@ def ver_reporte(request: Request):
     return plantillas.TemplateResponse(
         request, "reporte.html", _contexto(
             request, usuario, operacion=operacion, fuentes=fuentes,
-            generado_en=datetime.now().strftime("%d/%m/%Y %H:%M"),
+            generado_en=horario.ahora().strftime("%d/%m/%Y %H:%M GMT-03:00"),
             url_pyme=config.url_pyme(), url_banco=config.url_banco()))
 
 

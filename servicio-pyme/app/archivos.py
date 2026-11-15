@@ -9,6 +9,7 @@ La huella se calcula siempre sobre el contenido exacto que se guarda: si
 alguien modifica el archivo en disco, la verificacion lo detecta.
 """
 import datetime
+from app import horario
 from pathlib import Path
 import uuid
 
@@ -20,7 +21,7 @@ def guardar(nombre, contenido, origen, usuario_id, cursor=None):
     """Guarda el archivo en el volumen y registra su fila. Devuelve la fila."""
     carpeta = Path(config.dir_datos()) / "archivos"
     carpeta.mkdir(parents=True, exist_ok=True)
-    marca = datetime.datetime.now().strftime("%Y%m%d%H%M%S%f")
+    marca = horario.ahora().strftime("%Y%m%d%H%M%S%f")
     ruta = carpeta / ("%s_%s_%s" % (marca, uuid.uuid4().hex[:8], nombre))
     datos = contenido.encode("utf-8") if isinstance(contenido, str) else contenido
     with ruta.open("wb") as archivo:

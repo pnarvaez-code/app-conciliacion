@@ -10,6 +10,7 @@ Reglas:
   * la referencia (FV-XXXX) se asigna automaticamente si no se indica.
 """
 import datetime
+from app import horario
 
 from app import db
 
@@ -102,7 +103,7 @@ def proxima_referencia():
 def alta(fecha, monto, referencia, descripcion, usuario_id):
     """Registra una venta. Devuelve la fila creada."""
     if not fecha:
-        fecha = datetime.date.today().isoformat()
+        fecha = horario.hoy().isoformat()
     fecha, monto = _validar(fecha, monto)
     referencia = (referencia or "").strip().upper()
     descripcion = (descripcion or "").strip().upper()

@@ -10,6 +10,7 @@ La huella se calcula sobre el contenido exacto que llega: si el archivo
 fue tocado en el camino, no coincidira con el sello del emisor.
 """
 import datetime
+from app import horario
 from pathlib import Path
 
 from app import config, db
@@ -21,7 +22,7 @@ def guardar(nombre, contenido, usuario_id):
     nombre = _nombre_seguro(nombre)
     carpeta = Path(config.dir_datos()) / "archivos"
     carpeta.mkdir(parents=True, exist_ok=True)
-    marca = datetime.datetime.now().strftime("%Y%m%d%H%M%S%f")
+    marca = horario.ahora().strftime("%Y%m%d%H%M%S%f")
     ruta = carpeta / ("%s_%s" % (marca, nombre))
     datos = contenido if isinstance(contenido, bytes) else contenido.encode("utf-8")
     with ruta.open("wb") as archivo:

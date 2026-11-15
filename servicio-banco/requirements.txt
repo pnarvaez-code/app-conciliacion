@@ -7,3 +7,4 @@ itsdangerous
 python-multipart
 httpx
 reportlab
+tzdata>=2025.2

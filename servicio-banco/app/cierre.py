@@ -15,6 +15,7 @@ la version anterior queda en la cadena.
 Todas las acciones quedan auditadas con el usuario que las ejecuta.
 """
 import datetime
+from app import horario
 import csv
 import io
 import json
@@ -193,7 +194,7 @@ def _emitir(_codigo, usuario_id, ip, reemision, formato="csv"):
 
 def _codigo_nuevo(cursor=None):
     """Codigo del extracto del dia: E-AAAA-MM-DD-NN."""
-    hoy = datetime.date.today().isoformat()
+    hoy = horario.hoy().isoformat()
     if cursor is None:
         fila = db.consultar_uno(
             "SELECT COUNT(*) AS total FROM lotes WHERE codigo LIKE %s",
@@ -218,7 +219,7 @@ def _siguiente_version(codigo, cursor=None):
 
 def _nombre_archivo(version, extension):
     """Nombre descargable: servicio y fecha del extracto."""
-    fecha = datetime.date.today().isoformat()
+    fecha = horario.hoy().isoformat()
     sufijo = "" if version == 1 else "-v%d" % version
     return "banco-%s%s.%s" % (fecha, sufijo, extension)
 

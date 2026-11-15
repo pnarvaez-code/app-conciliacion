@@ -33,6 +33,8 @@ app.mount("/estaticos", StaticFiles(directory=str(BASE / "estaticos")),
           name="estaticos")
 plantillas = Jinja2Templates(directory=str(BASE / "plantillas"))
 app.include_router(internos.router)
+from app import horario
+plantillas.env.finalize = horario.presentar
 
 _log = logging.getLogger(__name__)
 

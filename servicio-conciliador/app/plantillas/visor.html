@@ -356,7 +356,7 @@ function pintar(datos) {
     s.cargas ? calidad + " % íntegra" : "Sin cargas";
   document.getElementById("hero-cadena").textContent = datos.cadena.length + " bloques";
   document.getElementById("visor-actualizado").textContent =
-    new Date().toLocaleTimeString("es-PY", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+    new Date().toLocaleTimeString("es-PY", { timeZone: "America/Asuncion", hour: "2-digit", minute: "2-digit", second: "2-digit" }) + " GMT-03:00";
   var insight = document.getElementById("visor-insight");
   var textoInsight;
   if (!s.cargas) {

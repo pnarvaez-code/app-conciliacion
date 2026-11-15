@@ -1,5 +1,6 @@
 """Generación del reporte operativo PDF en español."""
 from datetime import datetime
+from app import horario
 from io import BytesIO
 from xml.sax.saxutils import escape
 
@@ -14,7 +15,7 @@ from app import alertas, auditoria, config, db
 
 
 def _texto(valor):
-    return escape("" if valor is None else str(valor))
+    return escape("" if valor is None else str(horario.presentar(valor)))
 
 
 def _pie(canvas, documento):
@@ -56,7 +57,7 @@ def generar(usuario):
         Paragraph(_texto(config.NOMBRE_SERVICIO), estilos["Portada"]),
         Paragraph("Documento de seguimiento y control del servicio.", estilos["Cuerpo"]),
         Paragraph("Generado para: %s" % _texto(usuario["email"]), estilos["Cuerpo"]),
-        Paragraph("Fecha de generación: %s" % datetime.now().strftime("%d/%m/%Y %H:%M"), estilos["Cuerpo"]),
+        Paragraph("Fecha de generación: %s" % horario.ahora().strftime("%d/%m/%Y %H:%M GMT-03:00"), estilos["Cuerpo"]),
         Paragraph("Este informe resume los movimientos y extractos gestionados, "
                   "los sellos criptográficos, las alertas y las acciones "
                   "auditadas por el servicio bancario.", estilos["Cuerpo"]),
