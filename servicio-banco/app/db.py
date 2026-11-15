@@ -78,6 +78,8 @@ def asegurar_indices():
     with conectar() as conexion:
         with conexion.cursor() as cursor:
             cursor.execute(
+                "ALTER TABLE bloques DROP CONSTRAINT IF EXISTS bloques_emitido_por_fkey")
+            cursor.execute(
                 "CREATE UNIQUE INDEX IF NOT EXISTS "
                 "uq_movimientos_referencia_no_vacia "
                 "ON movimientos (referencia) WHERE referencia <> ''")

@@ -112,7 +112,7 @@ CREATE TABLE IF NOT EXISTS bloques (
     hash_archivo        CHAR(64) NOT NULL,
     hash_anterior       CHAR(64) NOT NULL,
     hash_bloque         CHAR(64) NOT NULL UNIQUE,
-    emitido_por         BIGINT REFERENCES usuarios(id),
+    emitido_por         BIGINT, -- ID del emisor en su servicio de origen; no es una FK local
     sellado_en          TEXT NOT NULL,          -- instante ISO: entra en la huella
     created_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at          TIMESTAMPTZ NOT NULL DEFAULT now()

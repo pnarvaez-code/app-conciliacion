@@ -84,6 +84,8 @@ def asegurar_esquema():
     with conectar() as conexion:
         with conexion.cursor() as cursor:
             cursor.execute(
+                "ALTER TABLE bloques DROP CONSTRAINT IF EXISTS bloques_emitido_por_fkey")
+            cursor.execute(
                 "ALTER TABLE bloques DROP CONSTRAINT IF EXISTS bloques_indice_key")
             cursor.execute(
                 "CREATE UNIQUE INDEX IF NOT EXISTS "
