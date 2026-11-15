@@ -1,6 +1,20 @@
 {% extends "base.html" %}
 {% block contenido %}
 <h2>Ventas registradas</h2>
+<form method="get" action="/" class="linea">
+  <div>
+    <label for="filtro-lote">Filtrar resumen y movimientos por lote</label>
+    <select id="filtro-lote" name="lote_activo">
+      <option value="todos" {{ 'selected' if lote_activo == 'todos' else '' }}>Ver todos los lotes</option>
+      {% for lote in lotes_filtro %}
+      <option value="{{ lote.numero }}" {{ 'selected' if lote_activo == lote.numero else '' }}>{{ lote.etiqueta }}</option>
+      {% endfor %}
+      <option value="pendientes" {{ 'selected' if lote_activo == 'pendientes' else '' }}>Pendientes sin lote</option>
+    </select>
+  </div>
+  <button type="submit">Aplicar filtro</button>
+</form>
+<p class="tenue">Resumen de {{ 'todos los movimientos' if lote_activo == 'todos' else ('pendientes sin lote' if lote_activo == 'pendientes' else 'Lote ' ~ lote_activo) }}.</p>
 <div class="indicadores">
   <div class="indicador"><span>{{ resumen.total }}</span>ventas</div>
   <div class="indicador"><span>{{ "{:,}".format(resumen.monto_total).replace(",", ".") }}</span>guaranies</div>

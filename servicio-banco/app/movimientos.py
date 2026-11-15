@@ -68,7 +68,14 @@ def vista_lotes(seleccion=None):
             (lote["id"],))
         filas = [dict(fila, lote_etiqueta=lote["etiqueta"]) for fila in filas]
         activo = numero
-    return {"movimientos": filas, "lotes_filtro": opciones, "lote_activo": activo}
+    resumen_filtrado = {
+        "total": len(filas),
+        "monto_total": sum(fila["monto"] for fila in filas),
+        "pendientes": sum(fila["estado"] == "pendiente" for fila in filas),
+        "en_lote": sum(fila["estado"] == "en_lote" for fila in filas),
+    }
+    return {"movimientos": filas, "lotes_filtro": opciones,
+            "lote_activo": activo, "resumen": resumen_filtrado}
 
 
 def pendientes():
