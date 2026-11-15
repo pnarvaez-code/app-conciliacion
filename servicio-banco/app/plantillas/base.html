@@ -12,7 +12,6 @@
   <div class="nav-enlaces">
     <a class="{{ 'activo' if request.url.path == '/' else '' }}" href="/">Movimientos</a>
     <a class="{{ 'activo' if request.url.path == '/lotes' else '' }}" href="/lotes">Extractos y sellos</a>
-    {% if usuario.rol == 'administrador' %}<a class="{{ 'activo' if request.url.path == '/usuarios' else '' }}" href="/usuarios">Usuarios</a>{% endif %}
     <a class="{{ 'activo' if request.url.path == '/alertas' else '' }}" href="/alertas">Alertas{% if alertas_nuevas %} <em>{{ alertas_nuevas }}</em>{% endif %}</a>
     <a class="{{ 'activo' if request.url.path == '/auditoria' else '' }}" href="/auditoria">Auditoría</a>
     <a class="{{ 'activo' if request.url.path == '/conexion' else '' }}" href="/conexion">Conexión</a>
