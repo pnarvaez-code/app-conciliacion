@@ -144,10 +144,12 @@ PYME no llama a Banco o Conciliador, y abrir Conciliador no despierta a los
 otros dos servicios. Por tanto, cada URL puede permanecer inactiva de forma
 independiente.
 
-Las renovaciones de sesión y el Visor solo consultan mientras la pestaña está
-visible y hubo interacción en los últimos 90 segundos. El Visor actualiza cada
-30 segundos y evita consultas superpuestas. Tras la inactividad, las sesiones
-caducan y es necesario volver a ingresar. Esto evita que pestañas abandonadas
+La sesión vence tras 10 minutos sin interacción del usuario. Clics, teclado,
+desplazamiento y acciones táctiles renuevan el plazo; el navegador agrupa los
+avisos de actividad para limitar solicitudes. Los refrescos automáticos del
+Visor no renuevan la sesión. El Visor consulta cada 30 segundos solamente si
+está visible y hubo interacción en los últimos 90 segundos. Tras el vencimiento,
+se requiere volver a ingresar. Esto evita que pestañas abandonadas
 mantengan el dyno despierto. No configure monitores externos para hacer pings.
 
 El presupuesto debe contemplar dynos y PostgreSQL por separado. Eco comparte

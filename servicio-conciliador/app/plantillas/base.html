@@ -39,15 +39,7 @@ document.querySelectorAll("form[data-carga-archivo]").forEach(function (formular
     if (boton) { boton.disabled = true; boton.textContent = "Verificando archivo…"; }
   });
 });
-// Renovar únicamente durante uso real; una pestaña abandonada permite reposo.
-var ultimaInteraccion = Date.now();
-["pointerdown", "keydown", "scroll", "touchstart"].forEach(function (evento) {
-  document.addEventListener(evento, function () { ultimaInteraccion = Date.now(); }, {passive: true});
-});
-window.setInterval(function () {
-  if (document.hidden || Date.now() - ultimaInteraccion > 90000) return;
-  fetch("/sesion/actividad", {method: "POST", credentials: "same-origin", redirect: "manual"}).catch(function () {});
-}, 45000);
 </script>
+<script src="/estaticos/actividad.js?v=20261118"></script>
 </body>
 </html>

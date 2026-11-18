@@ -114,6 +114,14 @@ def salir(request: Request):
 def actividad_sesion(request: Request):
     """Renueva la sesión mientras una pestaña de PyME sigue abierta."""
     _exigir_usuario(request)
+    try:
+        inactividad = float(request.headers.get("X-Inactividad-Segundos", "0"))
+        import math
+        if not math.isfinite(inactividad) or not 0 <= inactividad < 600:
+            return Response(status_code=400)
+    except ValueError:
+        return Response(status_code=400)
+    seguridad.renovar_actividad(request, inactividad)
     return Response(status_code=204)
 
 

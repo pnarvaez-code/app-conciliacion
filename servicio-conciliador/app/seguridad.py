@@ -25,9 +25,8 @@ from itsdangerous import BadSignature, URLSafeSerializer
 from app import config, db
 
 CLAVE_COOKIE = "sesion_conciliador"
-# La sesión se renueva mientras una pestaña de la aplicación sigue abierta.
-# Sin latidos (por ejemplo, al cerrarla) vence en dos minutos.
-DURACION_SESION = datetime.timedelta(minutes=2)
+# Solo acciones del usuario renuevan el plazo; el Visor no lo prolonga.
+DURACION_SESION = datetime.timedelta(minutes=10)
 LIMITE_BCRYPT = 72   # bcrypt solo considera los primeros 72 bytes de la clave
 LIMITE_ARCHIVO = 5 * 1024 * 1024
 
@@ -89,10 +88,20 @@ def usuario_actual(request: Request):
         "WHERE s.token_hash = %s AND s.expira_en > now() AND u.activo",
         (_huella_token(token),))
     if fila:
-        db.ejecutar("UPDATE sesiones SET expira_en = %s WHERE token_hash = %s",
-                    (datetime.datetime.now(datetime.timezone.utc) + DURACION_SESION,
-                     _huella_token(token)))
+        if request.url.path not in ("/visor/estado", "/sesion/actividad"):
+            renovar_actividad(request)
     return fila
+
+
+def renovar_actividad(request, segundos_inactivos=0):
+    """Renueva desde la última interacción, no desde el refresco automático."""
+    token = _leer_token(request.cookies.get(CLAVE_COOKIE))
+    if token:
+        segundos = max(0, min(float(segundos_inactivos), DURACION_SESION.total_seconds()))
+        db.ejecutar("UPDATE sesiones SET expira_en = %s WHERE token_hash = %s AND expira_en > now()",
+                    (datetime.datetime.now(datetime.timezone.utc) + DURACION_SESION
+                     - datetime.timedelta(seconds=segundos),
+                     _huella_token(token)))
 
 
 def ip_de(request: Request):
