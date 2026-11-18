@@ -18,7 +18,8 @@ Los pendientes tambien generan alerta, para que el auditor los vea.
 """
 import json
 
-from app import archivos, carga, db, recepciones
+from app import archivos, carga, db, recepciones, alertas, auditoria
+from app.nucleo import sellos
 from app.nucleo import conciliacion as motor
 
 
@@ -37,8 +38,8 @@ def ejecutar(usuario_id, ip=None):
             "Suba un archivo nuevo de Empresa o Banco para ejecutar otra conciliacion."
             % existente["id"])
 
-    movimientos_empresa, _ = carga.leer(empresa["archivo"], _contenido(empresa))
-    movimientos_banco, _ = carga.leer(banco["archivo"], _contenido(banco))
+    movimientos_empresa, _ = carga.leer(empresa["archivo"], _contenido(empresa, usuario_id, ip))
+    movimientos_banco, _ = carga.leer(banco["archivo"], _contenido(banco, usuario_id, ip))
 
     pares, pendientes_empresa, pendientes_banco = motor.conciliar(
         movimientos_empresa, movimientos_banco)
@@ -196,11 +197,32 @@ def _guardar_pendiente(cursor, conciliacion_id, origen, tipo, movimiento, motivo
         (conciliacion_id, origen, tipo, _json(movimiento), motivo))
 
 
-def _contenido(archivo):
+def _contenido(archivo, usuario_id=None, ip=None):
     try:
-        return archivos.obtener_contenido(archivo).decode("utf-8", errors="replace")
+        contenido = archivos.obtener_contenido(archivo)
     except FileNotFoundError as error:
         raise ValueError("el archivo recibido ya no está disponible; súbalo nuevamente") from error
+    # La validación de recepción no cubre una modificación posterior del disco
+    # o del respaldo. Recalcular usando los mismos bytes que recibirá el motor.
+    actual = sellos.huella_archivo(contenido)
+    estado, lote, detalle = recepciones._verificar(
+        archivo["origen"], {"nombre": archivo["archivo"], "sha256": actual}, contenido)
+    if actual != archivo["sha256"]:
+        estado = "alterado"
+        detalle = "El contenido cambió después de la recepción. " + detalle
+    if estado != "intacto":
+        db.ejecutar(
+            "UPDATE recepciones SET estado_integridad=%s, detalle=%s,"
+            " verificado_en=now(), verificado_por=%s WHERE id=%s",
+            (estado, detalle, usuario_id, archivo["id"]))
+        alertas.crear("integridad", "alta", "Conciliación bloqueada por integridad",
+                      detalle, referencia=lote or archivo["archivo"], usuario_id=usuario_id)
+        auditoria.registrar(
+            usuario_id, "conciliacion_bloqueada_integridad", "recepciones", archivo["id"],
+            {"sha256_recibido": archivo["sha256"], "sha256_actual": actual,
+             "estado": estado, "motivo": detalle}, ip)
+        raise ValueError("Conciliación bloqueada: %s" % detalle)
+    return contenido.decode("utf-8", errors="replace")
 
 
 def _fecha_min(movimientos):
