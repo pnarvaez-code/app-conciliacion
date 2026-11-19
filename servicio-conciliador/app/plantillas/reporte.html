@@ -40,21 +40,25 @@
 <main class="reporte">
   <div class="acciones"><button onclick="window.print()">Imprimir reporte</button><a class="primario" href="/reporte/pdf">Descargar PDF</a><a href="/">Volver a la bandeja</a></div>
   <p class="kicker">Conciliador · Sistema de conciliación con integridad verificable</p>
+  {% if logo_oficial %}<img src="/estaticos/conciliachain.jpg" width="130" height="130" alt="ConciliaChain" style="object-fit: contain">{% endif %}
   <h1>Reporte de conciliación</h1>
   <p class="fecha">Generado el {{ generado_en }} · Reporte de auditoría</p>
-  {% if operacion %}
+  {% for operacion, fuentes, diferencias in operaciones %}
   <section class="estado"><h2>Conciliación registrada</h2><p>Operación #{{ operacion.id }}: {{ operacion.conciliados }} pares de {{ operacion.total_empresa }} movimientos de Empresa y {{ operacion.total_banco }} de Banco · {{ operacion.porcentaje }} % conciliado.</p></section>
-  {% else %}
-  <section class="estado"><h2>Documento de integridad verificable</h2><p>Todavía no se concilió: abra la pestaña Conciliación cuando existan dos archivos íntegros verificados.</p></section>
-  {% endif %}
+  {% if diferencias %}<p>Movimientos pendientes: {{ diferencias.values()|sum }}.</p>
+  <ul>{% for tipo, cantidad in diferencias.items() %}<li>{{ tipo|replace('_', ' ') }}: {{ cantidad }}</li>{% endfor %}</ul>
+  {% else %}<p>Sin diferencias ni movimientos pendientes.</p>{% endif %}
   <section>
-    <h2>2. Certificado de integridad de los datos fuente</h2>
+    <h2>Fuentes de la operación #{{ operacion.id }}</h2>
     <p class="descripcion">Se verificó contra la cadena de sellos que los archivos recibidos conservan la huella de su emisión y que sus movimientos coinciden con las huellas selladas. Todo archivo alterado queda excluido de la conciliación.</p>
     <table><thead><tr><th>Origen</th><th>Lote</th><th>Archivo</th><th>Sellado</th><th>Mov.</th><th>Hash raíz SHA-256</th><th>Estado</th></tr></thead>
       <tbody>{% for f in fuentes %}<tr><td>{{ f.origen }}</td><td>{{ f.lote }}</td><td>{{ f.archivo }}</td><td>{{ f.sellado }}</td><td>{{ f.movimientos }}</td><td class="hash">{{ f.hash_raiz }}</td><td class="estado-ok">{{ f.estado }}</td></tr>{% else %}<tr><td colspan="7">Aún no hay archivos fuente íntegros para certificar.</td></tr>{% endfor %}</tbody>
     </table>
   </section>
-  <section><h2>3. Firma</h2><div class="firma">Contador / responsable financiero o auditor</div></section>
+  {% else %}
+  <section class="estado"><h2>Documento de integridad verificable</h2><p>Todavía no se concilió. Abra la pestaña Conciliación cuando existan dos archivos íntegros verificados.</p></section>
+  {% endfor %}
+  <section><h2>Firma</h2><div class="firma">Contador / responsable financiero o auditor</div></section>
   <p class="pie">Este reporte presenta evidencia operativa del Conciliador. Los hashes y estados provienen de la cadena local de sellos.</p>
 </main>
 </body>

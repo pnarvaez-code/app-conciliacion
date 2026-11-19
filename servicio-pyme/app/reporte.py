@@ -1,5 +1,7 @@
 """Generación del reporte operativo PDF en español."""
 from datetime import datetime
+from pathlib import Path
+from reportlab.platypus import Image
 from app import horario
 from io import BytesIO
 from xml.sax.saxutils import escape
@@ -104,6 +106,9 @@ def generar(usuario):
             "seguimiento del servicio y no sustituye la revisión contable "
             "ni la verificación de los archivos originales.", estilos["Cuerpo"]),
     ]
+    logo = Path(__file__).with_name("estaticos") / "conciliachain.jpg"
+    if logo.is_file():
+        elementos.insert(0, Image(str(logo), width=38 * mm, height=38 * mm, kind="proportional"))
     documento.build(elementos, onFirstPage=_pie, onLaterPages=_pie)
     return buffer.getvalue()
 

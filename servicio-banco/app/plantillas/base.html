@@ -9,7 +9,7 @@
 </head>
 <body>
 <nav class="barra">
-  <a class="marca" href="/"><img class="marca-emblema" src="/estaticos/conciliachain-emblema.png" alt="ConciliaChain" width="38" height="38"><span><b>{{ servicio }}</b><small>Operaciones bancarias</small></span></a>
+  <a class="marca" href="/">{% if logo_oficial %}<img class="marca-emblema" src="/estaticos/conciliachain.jpg" alt="ConciliaChain" width="38" height="38">{% endif %}<span><b>{{ servicio }}</b><small>Operaciones bancarias</small></span></a>
   <div class="nav-enlaces">
     <a class="{{ 'activo' if request.url.path == '/' else '' }}" href="/">Movimientos</a>
     <a class="{{ 'activo' if request.url.path == '/lotes' else '' }}" href="/lotes">Extractos y sellos</a>

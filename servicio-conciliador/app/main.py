@@ -36,6 +36,7 @@ app = FastAPI(title="Servicio CONCILIADOR - herramienta del auditor")
 app.mount("/estaticos", StaticFiles(directory=str(BASE / "estaticos")),
           name="estaticos")
 plantillas = Jinja2Templates(directory=str(BASE / "plantillas"))
+plantillas.env.globals["logo_oficial"] = (BASE / "estaticos" / "conciliachain.jpg").is_file()
 app.include_router(internos.router)
 from app import horario
 plantillas.env.finalize = horario.presentar
@@ -546,12 +547,10 @@ def ver_auditoria(request: Request):
 @app.get("/reporte", response_class=HTMLResponse)
 def ver_reporte(request: Request):
     usuario = _exigir_usuario(request)
-    operaciones = conciliacion.listar(limite=1)
-    operacion = operaciones[0] if operaciones else None
-    fuentes = reporte._fuentes_certificadas(operacion["id"] if operacion else None)
+    operaciones = reporte.operaciones_reportables()
     return plantillas.TemplateResponse(
         request, "reporte.html", _contexto(
-            request, usuario, operacion=operacion, fuentes=fuentes,
+            request, usuario, operaciones=operaciones,
             generado_en=horario.ahora().strftime("%d/%m/%Y %H:%M GMT-03:00"),
             url_pyme=config.url_pyme(), url_banco=config.url_banco()))
 

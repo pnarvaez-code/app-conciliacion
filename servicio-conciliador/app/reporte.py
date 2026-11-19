@@ -1,5 +1,7 @@
 """Generación del reporte operativo PDF en español."""
 from datetime import datetime
+from pathlib import Path
+from reportlab.platypus import Image
 from app import horario
 from io import BytesIO
 from xml.sax.saxutils import escape
@@ -48,9 +50,7 @@ def generar(usuario):
         fontSize=9.5, leading=14, spaceAfter=5))
     auditorias = auditoria.listar(limite=25)
     alertas_recientes = alertas.listar(limite=10)
-    operaciones = conciliacion.listar(limite=1)
-    operacion = operaciones[0] if operaciones else None
-    fuentes = _fuentes_certificadas(operacion["id"] if operacion else None)
+    operaciones = operaciones_reportables()
     metricas = [
         ("Usuarios registrados", db.consultar_uno("SELECT COUNT(*) AS n FROM usuarios")["n"]),
         ("Operaciones auditadas", db.consultar_uno("SELECT COUNT(*) AS n FROM auditoria")["n"]),
@@ -65,17 +65,20 @@ def generar(usuario):
                   % (horario.ahora().strftime("%d/%m/%Y %H:%M GMT-03:00"), _texto(usuario["email"])),
                   estilos["Cuerpo"]),
         Paragraph("1. Resultado de conciliación", estilos["Seccion"]),
-        _resultado_conciliacion(operacion, estilos),
+    ]
+    for operacion, fuentes, diferencias in operaciones:
+        elementos.extend([
+            _resultado_conciliacion(operacion, estilos),
+            Paragraph(_resumen_diferencias(diferencias), estilos["Cuerpo"]),
+            _tabla_fuentes(fuentes),
+        ])
+    if not operaciones:
+        elementos.append(_resultado_conciliacion(None, estilos))
+    elementos.extend([
         Paragraph("2. Certificado de integridad de los datos fuente", estilos["Seccion"]),
         Paragraph("Cada archivo se verifica contra el sello SHA-256 de su emisor y "
                   "contra las huellas de sus movimientos. Un archivo Alterado, "
                   "Sin sello o Rechazado queda excluido de la conciliación.", estilos["Cuerpo"]),
-        _tabla(["Origen", "Lote", "Archivo", "Sellado", "Mov.", "Hash raíz SHA-256", "Estado"],
-               [[_texto(f["origen"]), _texto(f["lote"]), _texto(f["archivo"]),
-                 _texto(f["sellado"]), _texto(f["movimientos"]),
-                 _texto(f["hash_raiz"]), _texto(f["estado"])] for f in fuentes]
-               or [["-", "-", "Sin fuentes verificadas", "-", "-", "-", "-"]],
-               [22 * mm, 30 * mm, 42 * mm, 28 * mm, 13 * mm, 87 * mm, 25 * mm], "#123b5d"),
         Paragraph("3. Resumen ejecutivo", estilos["Seccion"]),
         _tabla(["Indicador", "Valor"], [[_texto(k), _texto(v)] for k, v in metricas],
                [145 * mm, 70 * mm], "#123b5d"),
@@ -96,9 +99,43 @@ def generar(usuario):
                  _texto(r["accion"]), _texto("%s %s" % (r["entidad"] or "", r["entidad_id"] or ""))]
                 for r in auditorias] or [["-", "-", "Sin operaciones", "-"]],
                [45 * mm, 55 * mm, 65 * mm, 50 * mm], "#256d85"),
-    ]
+    ])
+    logo = Path(__file__).with_name("estaticos") / "conciliachain.jpg"
+    if logo.is_file():
+        elementos.insert(0, Image(str(logo), width=38 * mm, height=38 * mm, kind="proportional"))
     documento.build(elementos, onFirstPage=_pie, onLaterPages=_pie)
     return buffer.getvalue()
+
+
+def operaciones_reportables():
+    """Las tres últimas conciliaciones persistidas, con evidencia por operación."""
+    resultado = []
+    for operacion in reversed(conciliacion.listar(limite=3)):
+        operacion_id = operacion["id"]
+        filas = db.consultar(
+            "SELECT tipo_diferencia, COUNT(*) AS cantidad FROM conciliacion_pendientes "
+            "WHERE conciliacion_id = %s GROUP BY tipo_diferencia ORDER BY tipo_diferencia",
+            (operacion_id,))
+        diferencias = {fila["tipo_diferencia"]: fila["cantidad"] for fila in filas}
+        resultado.append((operacion, _fuentes_certificadas(operacion_id), diferencias))
+    return resultado
+
+
+def _resumen_diferencias(diferencias):
+    if not diferencias:
+        return "Sin diferencias ni movimientos pendientes."
+    detalle = ", ".join("%s (%s)" % (tipo.replace("_", " "), cantidad)
+                        for tipo, cantidad in diferencias.items())
+    return _texto("Movimientos pendientes: %s. %s." % (sum(diferencias.values()), detalle))
+
+
+def _tabla_fuentes(fuentes):
+    return _tabla(
+        ["Origen", "Lote", "Archivo", "Sellado", "Mov.", "Hash raíz SHA-256", "Estado"],
+        [[f["origen"], f["lote"], f["archivo"], f["sellado"], f["movimientos"],
+          f["hash_raiz"], f["estado"]] for f in fuentes]
+        or [["-", "-", "Sin fuentes verificadas", "-", "-", "-", "-"]],
+        [22 * mm, 30 * mm, 42 * mm, 28 * mm, 13 * mm, 87 * mm, 25 * mm], "#123b5d")
 
 
 def _resultado_conciliacion(operacion, estilos):
@@ -125,8 +162,9 @@ def _fuentes_certificadas(conciliacion_id):
         etiqueta = "PYME" if fuente["origen"] == "EMPRESA" else "BANCO"
         sello = db.consultar_uno(
             "SELECT hash_raiz, n_movimientos, sellado_en FROM bloques "
-            "WHERE origen = %s AND lote_codigo = %s ORDER BY indice DESC LIMIT 1",
-            (etiqueta, fuente.get("lote_codigo")))
+            "WHERE origen = %s AND lote_codigo = %s AND hash_archivo = %s "
+            "ORDER BY indice DESC LIMIT 1",
+            (etiqueta, fuente.get("lote_codigo"), fuente.get("sha256")))
         resultado.append({
             "origen": fuente["origen"],
             "lote": fuente.get("lote_codigo") or "sin lote",

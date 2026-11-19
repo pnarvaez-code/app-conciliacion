@@ -10,7 +10,7 @@
 <body class="centrado">
 <form class="tarjeta login-panel" method="post" action="/login">
   <div class="login-marca marca-ingreso">
-    <img src="/estaticos/conciliachain.png" alt="ConciliaChain">
+    {% if logo_oficial %}<img src="/estaticos/conciliachain.jpg" alt="ConciliaChain">{% endif %}
     <h1>{{ servicio }}</h1>
   </div>
   <p class="tenue">Conciliación con evidencia, integridad y trazabilidad verificable.</p>

@@ -32,6 +32,7 @@ app = FastAPI(title="Servicio PYME - sistema de ventas")
 app.mount("/estaticos", StaticFiles(directory=str(BASE / "estaticos")),
           name="estaticos")
 plantillas = Jinja2Templates(directory=str(BASE / "plantillas"))
+plantillas.env.globals["logo_oficial"] = (BASE / "estaticos" / "conciliachain.jpg").is_file()
 app.include_router(internos.router)
 from app import horario
 plantillas.env.finalize = horario.presentar
