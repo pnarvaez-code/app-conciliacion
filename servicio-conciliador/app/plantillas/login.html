@@ -5,10 +5,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Ingreso - {{ servicio }}</title>
 <link rel="stylesheet" href="/estaticos/estilos.css?v=20261114-1">
+<link rel="stylesheet" href="/estaticos/marca.css">
 </head>
 <body class="centrado">
 <form class="tarjeta login-panel" method="post" action="/login">
-  <div class="login-marca"><div><small>PLATAFORMA FINANCIERA</small><h1>{{ servicio }}</h1></div></div>
+  <div class="login-marca marca-ingreso">
+    <img src="/estaticos/conciliachain.png" alt="ConciliaChain">
+    <h1>{{ servicio }}</h1>
+  </div>
   <p class="tenue">Conciliación con evidencia, integridad y trazabilidad verificable.</p>
   {% if error %}<div class="error">{{ error }}</div>{% endif %}
   <label>Correo</label>

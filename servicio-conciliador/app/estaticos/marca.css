@@ -1,0 +1,17 @@
+.marca-emblema {
+  flex: 0 0 38px;
+  object-fit: contain;
+  background: #fff;
+  border-radius: 8px;
+}
+
+.marca-ingreso {
+  flex-direction: column;
+  text-align: center;
+}
+
+.marca-ingreso img {
+  display: block;
+  width: min(100%, 200px);
+  height: auto;
+}

@@ -5,10 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{{ servicio }} - sistema de conciliacion</title>
 <link rel="stylesheet" href="/estaticos/estilos.css?v=20261114-1">
+<link rel="stylesheet" href="/estaticos/marca.css">
 </head>
 <body>
 <nav class="barra">
-  <a class="marca" href="/"><span><b>{{ servicio }}</b><small>Gestión de ventas</small></span></a>
+  <a class="marca" href="/"><img class="marca-emblema" src="/estaticos/conciliachain-emblema.png" alt="ConciliaChain" width="38" height="38"><span><b>{{ servicio }}</b><small>Gestión de ventas</small></span></a>
   <div class="nav-enlaces">
     <a class="{{ 'activo' if request.url.path == '/' else '' }}" href="/">Ventas</a>
     <a class="{{ 'activo' if request.url.path == '/lotes' else '' }}" href="/lotes">Cierres y sellos</a>
