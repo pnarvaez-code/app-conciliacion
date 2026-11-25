@@ -83,6 +83,7 @@ def asegurar_esquema():
         return
     with conectar() as conexion:
         with conexion.cursor() as cursor:
+            cursor.execute("ALTER TABLE bloques ADD COLUMN IF NOT EXISTS huellas_importadas JSONB")
             cursor.execute(
                 "ALTER TABLE bloques DROP CONSTRAINT IF EXISTS bloques_emitido_por_fkey")
             cursor.execute(

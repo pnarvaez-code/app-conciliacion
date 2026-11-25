@@ -184,6 +184,21 @@ def _verificar(origen, archivo, contenido):
                     "El SHA-256 del archivo coincide, pero sus movimientos no "
                     "coinciden con las huellas selladas: %s"
                     % "; ".join(problemas[:3]))
+            originales = sello.get("huellas_importadas")
+            if originales is not None:
+                editados = [
+                    str(indice) for indice, (original, emitida) in enumerate(
+                        zip(originales, sello["hashes_movimientos"]), 1)
+                    if original is not None and original != emitida
+                ]
+                if editados:
+                    return (
+                        "alterado", sello["lote_codigo"],
+                        "El archivo coincide con el sello de emisión, pero %d movimiento(s) "
+                        "cambiaron después de la importación y antes del sellado. "
+                        "Posiciones en el archivo: %s%s."
+                        % (len(editados), ", ".join(editados[:10]),
+                           "…" if len(editados) > 10 else ""))
             return ("intacto", sello["lote_codigo"],
                     "SHA-256 verificado contra el sello del lote %s emitido el %s."
                     % (sello["lote_codigo"], sello["sellado_en"]))

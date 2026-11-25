@@ -75,15 +75,16 @@ def registrar_bloque_recibido(bloque_recibido, origen_esperado=None):
     db.ejecutar(
         "INSERT INTO bloques (indice, origen, lote_codigo, archivo,"
         " n_movimientos, hashes_movimientos, hash_raiz, hash_archivo,"
-        " hash_anterior, hash_bloque, emitido_por, sellado_en)"
-        " VALUES (%s, %s, %s, %s, %s, %s::jsonb, %s, %s, %s, %s, %s, %s)",
+        " hash_anterior, hash_bloque, emitido_por, sellado_en, huellas_importadas)"
+        " VALUES (%s, %s, %s, %s, %s, %s::jsonb, %s, %s, %s, %s, %s, %s, %s::jsonb)",
         (bloque_recibido["indice"], bloque_recibido["origen"],
          bloque_recibido["lote_codigo"], bloque_recibido["archivo"],
          bloque_recibido["n_movimientos"],
          _json(bloque_recibido["hashes_movimientos"]),
          bloque_recibido["hash_raiz"], bloque_recibido["hash_archivo"],
          bloque_recibido["hash_anterior"], bloque_recibido["hash_bloque"],
-         bloque_recibido["emitido_por"], bloque_recibido["sellado_en"]))
+         bloque_recibido["emitido_por"], bloque_recibido["sellado_en"],
+                 _json(bloque_recibido.get("huellas_importadas"))))
     return {"aceptado": True}
 
 

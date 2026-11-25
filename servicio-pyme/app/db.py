@@ -77,6 +77,8 @@ def asegurar_indices():
     """Crea invariantes de concurrencia también en bases ya existentes."""
     with conectar() as conexion:
         with conexion.cursor() as cursor:
+            cursor.execute("ALTER TABLE bloques ADD COLUMN IF NOT EXISTS huellas_importadas JSONB")
+            cursor.execute("ALTER TABLE movimientos ADD COLUMN IF NOT EXISTS huella_importada TEXT")
             cursor.execute(
                 "ALTER TABLE bloques DROP CONSTRAINT IF EXISTS bloques_emitido_por_fkey")
             cursor.execute(

@@ -22,6 +22,7 @@ import xml.etree.ElementTree as ET
 from datetime import datetime
 
 from app import db
+from app.nucleo import sellos
 
 
 MAX_FILAS = 10000
@@ -125,11 +126,11 @@ def importar_filas(filas, usuario_id, archivo):
                 referencia = fila["referencia"]
                 cursor.execute(
                     "INSERT INTO movimientos (fecha, monto, referencia,"
-                    " descripcion, creado_por) VALUES (%s, %s, %s, %s, %s)"
+                    " descripcion, creado_por, huella_importada) VALUES (%s, %s, %s, %s, %s, %s)"
                     " ON CONFLICT (referencia) WHERE referencia <> ''"
                     " DO NOTHING RETURNING id",
                     (fila["fecha"], fila["monto"], referencia,
-                     fila["descripcion"], usuario_id))
+                     fila["descripcion"], usuario_id, sellos.huella_movimiento(fila)))
                 if cursor.fetchone():
                     creados += 1
                 else:

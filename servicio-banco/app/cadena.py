@@ -59,15 +59,16 @@ def sellar_lote(lote_codigo, archivo, contenido, movimientos, usuario_id):
             cursor.execute(
                 "INSERT INTO bloques (indice, origen, lote_codigo, archivo,"
                 " n_movimientos, hashes_movimientos, hash_raiz, hash_archivo,"
-                " hash_anterior, hash_bloque, emitido_por, sellado_en)"
-                " VALUES (%s, %s, %s, %s, %s, %s::jsonb, %s, %s, %s, %s, %s, %s)"
+                " hash_anterior, hash_bloque, emitido_por, sellado_en, huellas_importadas)"
+                " VALUES (%s, %s, %s, %s, %s, %s::jsonb, %s, %s, %s, %s, %s, %s, %s::jsonb)"
                 " RETURNING id",
                 (bloque["indice"], bloque["origen"], bloque["lote_codigo"],
                  bloque["archivo"], bloque["n_movimientos"],
                  _json(bloque["hashes_movimientos"]), bloque["hash_raiz"],
                  bloque["hash_archivo"], bloque["hash_anterior"],
                  bloque["hash_bloque"], bloque["emitido_por"],
-                 bloque["sellado_en"]))
+                 bloque["sellado_en"],
+                 _json(bloque.get("huellas_importadas"))))
             fila = cursor.fetchone()
         conexion.commit()
     bloque["id"] = fila["id"]
@@ -140,15 +141,16 @@ def registrar_bloque_recibido(bloque_recibido):
     db.ejecutar(
         "INSERT INTO bloques (indice, origen, lote_codigo, archivo,"
         " n_movimientos, hashes_movimientos, hash_raiz, hash_archivo,"
-        " hash_anterior, hash_bloque, emitido_por, sellado_en)"
-        " VALUES (%s, %s, %s, %s, %s, %s::jsonb, %s, %s, %s, %s, %s, %s)",
+        " hash_anterior, hash_bloque, emitido_por, sellado_en, huellas_importadas)"
+        " VALUES (%s, %s, %s, %s, %s, %s::jsonb, %s, %s, %s, %s, %s, %s, %s::jsonb)",
         (bloque_recibido["indice"], bloque_recibido["origen"],
          bloque_recibido["lote_codigo"], bloque_recibido["archivo"],
          bloque_recibido["n_movimientos"],
          _json(bloque_recibido["hashes_movimientos"]),
          bloque_recibido["hash_raiz"], bloque_recibido["hash_archivo"],
          bloque_recibido["hash_anterior"], bloque_recibido["hash_bloque"],
-         bloque_recibido["emitido_por"], bloque_recibido["sellado_en"]))
+         bloque_recibido["emitido_por"], bloque_recibido["sellado_en"],
+                 _json(bloque_recibido.get("huellas_importadas"))))
     return {"aceptado": True}
 
 
@@ -176,6 +178,8 @@ def _intentar_envio(bloque, destino, url, envio_id=None):
     """Envia el bloque al servicio destino y actualiza el estado del envio."""
     # Cuerpo con los campos de la cadena; las fechas viajan como texto ISO.
     cuerpo = {}
+    if bloque.get("huellas_importadas") is not None:
+        cuerpo["huellas_importadas"] = bloque["huellas_importadas"]
     for campo in CAMPOS_BLOQUE:
         valor = bloque[campo]
         cuerpo[campo] = valor.isoformat() if hasattr(valor, "isoformat") else valor

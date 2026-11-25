@@ -65,6 +65,8 @@ def huella_bloque(bloque):
     sello y no deben entrar en el calculo.
     """
     contenido = {campo: bloque[campo] for campo in CAMPOS_SELLADOS}
+    if bloque.get("huellas_importadas") is not None:
+        contenido["huellas_importadas"] = bloque["huellas_importadas"]
     return huella(json.dumps(contenido, sort_keys=True))
 
 
@@ -76,6 +78,12 @@ def problema_bloque(bloque):
         if (not isinstance(cantidad, int) or isinstance(cantidad, bool) or
                 cantidad < 0 or not isinstance(hashes, list)):
             return "estructura de movimientos invalida"
+        originales = bloque.get("huellas_importadas")
+        if originales is not None and (
+                not isinstance(originales, list) or len(originales) != cantidad
+                or any(h is not None and (not isinstance(h, str) or len(h) != 64)
+                       for h in originales)):
+            return "huellas de importación inválidas"
         if cantidad != len(hashes):
             return "cantidad de movimientos no coincide con sus huellas"
         if any(not isinstance(valor, str) or len(valor) != 64 for valor in hashes):
@@ -105,6 +113,9 @@ def construir_bloque(indice, origen, lote_codigo, archivo, movimientos,
         "emitido_por": emitido_por,
         "sellado_en": sellado_en,
     }
+    originales = [m.get("huella_importada") for m in movimientos]
+    if any(originales):
+        bloque["huellas_importadas"] = originales
     bloque["hash_bloque"] = huella_bloque(bloque)
     return bloque
 

@@ -144,15 +144,16 @@ def _emitir(_codigo, usuario_id, ip, reemision, formato="csv"):
             cursor.execute(
                 "INSERT INTO bloques (indice, origen, lote_codigo, archivo,"
                 " n_movimientos, hashes_movimientos, hash_raiz, hash_archivo,"
-                " hash_anterior, hash_bloque, emitido_por, sellado_en)"
-                " VALUES (%s, %s, %s, %s, %s, %s::jsonb, %s, %s, %s, %s, %s, %s)"
+                " hash_anterior, hash_bloque, emitido_por, sellado_en, huellas_importadas)"
+                " VALUES (%s, %s, %s, %s, %s, %s::jsonb, %s, %s, %s, %s, %s, %s, %s::jsonb)"
                 " RETURNING id",
                 (bloque["indice"], bloque["origen"], bloque["lote_codigo"],
                  bloque["archivo"], bloque["n_movimientos"],
                  json.dumps(bloque["hashes_movimientos"]), bloque["hash_raiz"],
                  bloque["hash_archivo"], bloque["hash_anterior"],
                  bloque["hash_bloque"], bloque["emitido_por"],
-                 bloque["sellado_en"]))
+                 bloque["sellado_en"],
+                 json.dumps(bloque.get("huellas_importadas"))))
             bloque["id"] = cursor.fetchone()["id"]
             for destino, _url in config.pares():
                 cursor.execute(
