@@ -9,6 +9,7 @@ def main():
     with patch.object(reporte.auditoria, "listar", return_value=[]), \
             patch.object(reporte.alertas, "listar", return_value=[]), \
             patch.object(reporte.conciliacion, "listar", return_value=[]), \
+            patch.object(reporte.db, "consultar", return_value=[]), \
             patch.object(reporte.recepciones, "ultima_intacta", return_value=None), \
             patch.object(reporte.db, "consultar_uno", return_value={"n": 0}):
         contenido = reporte.generar(usuario)

@@ -50,7 +50,13 @@ def generar(usuario):
         fontSize=9.5, leading=14, spaceAfter=5))
     auditorias = auditoria.listar(limite=25)
     alertas_recientes = alertas.listar(limite=10)
-    operaciones = operaciones_reportables()
+    operaciones = operaciones_reportables(limite=None)
+    alterados = db.consultar(
+        "SELECT r.id, r.origen, r.lote_codigo, r.verificado_en, r.detalle,"
+        " a.nombre AS archivo, a.sha256 FROM recepciones r"
+        " JOIN archivos a ON a.id = r.archivo_id"
+        " WHERE r.estado_integridad = %s ORDER BY r.id",
+        ("alterado",))
     metricas = [
         ("Usuarios registrados", db.consultar_uno("SELECT COUNT(*) AS n FROM usuarios")["n"]),
         ("Operaciones auditadas", db.consultar_uno("SELECT COUNT(*) AS n FROM auditoria")["n"]),
@@ -64,10 +70,13 @@ def generar(usuario):
         Paragraph("Generado el %s · Responsable: %s"
                   % (horario.ahora().strftime("%d/%m/%Y %H:%M GMT-03:00"), _texto(usuario["email"])),
                   estilos["Cuerpo"]),
-        Paragraph("1. Resultado de conciliación", estilos["Seccion"]),
+        Paragraph("1. Historial completo de conciliaciones", estilos["Seccion"]),
     ]
     for operacion, fuentes, diferencias in operaciones:
         elementos.extend([
+            Paragraph("Operación #%s · %s" % (
+                operacion["id"], "Diferencias genuinas" if diferencias else "Exitosa"),
+                estilos["Seccion"]),
             _resultado_conciliacion(operacion, estilos),
             Paragraph(_resumen_diferencias(diferencias), estilos["Cuerpo"]),
             _tabla_fuentes(fuentes),
@@ -79,7 +88,15 @@ def generar(usuario):
         Paragraph("Cada archivo se verifica contra el sello SHA-256 de su emisor y "
                   "contra las huellas de sus movimientos. Un archivo Alterado, "
                   "Sin sello o Rechazado queda excluido de la conciliación.", estilos["Cuerpo"]),
-        Paragraph("3. Resumen ejecutivo", estilos["Seccion"]),
+        Paragraph("3. Ingresos alterados excluidos de la conciliación", estilos["Seccion"]),
+        _tabla(["Ingreso", "Origen", "Lote y archivo", "Verificación", "SHA-256 recibido", "Motivo"],
+               [[f["id"], f["origen"],
+                 "%s · %s" % (f["lote_codigo"] or "Sin lote", f["archivo"]),
+                 f["verificado_en"], f["sha256"], f["detalle"] or "Sin detalle"]
+                for f in alterados]
+               or [["—", "—", "—", "—", "—", "No hay ingresos alterados registrados."]],
+               [16 * mm, 22 * mm, 44 * mm, 32 * mm, 49 * mm, 84 * mm], "#9a3412"),
+        Paragraph("4. Resumen ejecutivo", estilos["Seccion"]),
         _tabla(["Indicador", "Valor"], [[_texto(k), _texto(v)] for k, v in metricas],
                [145 * mm, 70 * mm], "#123b5d"),
         Paragraph("Alertas recientes", estilos["Seccion"]),
@@ -88,7 +105,7 @@ def generar(usuario):
                  _texto(a["estado"]), _texto(a["titulo"])] for a in alertas_recientes]
                or [["-", "-", "-", "-", "No se registran alertas recientes."]],
                [40 * mm, 35 * mm, 32 * mm, 30 * mm, 78 * mm], "#9a3412"),
-        Paragraph("4. Firma", estilos["Seccion"]),
+        Paragraph("5. Firma", estilos["Seccion"]),
         Spacer(1, 10 * mm),
         HRFlowable(width=80 * mm, thickness=0.6, color=colors.HexColor("#334155"),
                    spaceBefore=0, spaceAfter=2),
@@ -107,10 +124,10 @@ def generar(usuario):
     return buffer.getvalue()
 
 
-def operaciones_reportables():
-    """Las tres últimas conciliaciones persistidas, con evidencia por operación."""
+def operaciones_reportables(limite=3):
+    """Conciliaciones persistidas con evidencia por operación."""
     resultado = []
-    for operacion in reversed(conciliacion.listar(limite=3)):
+    for operacion in reversed(conciliacion.listar(limite=limite)):
         operacion_id = operacion["id"]
         filas = db.consultar(
             "SELECT tipo_diferencia, COUNT(*) AS cantidad FROM conciliacion_pendientes "
