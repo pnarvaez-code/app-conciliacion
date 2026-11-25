@@ -34,13 +34,13 @@ def main():
     assert respuesta.headers["location"] == "/login"
     print("GET / sin sesion -> 303 a /login")
 
-    for ruta in ("/recepciones", "/conciliacion", "/cadena", "/visor",
+    for ruta in ("/ingresos", "/conciliacion", "/cadena", "/visor",
                  "/usuarios", "/alertas", "/auditoria", "/reporte"):
         assert cliente.get(ruta).status_code == 303, ruta
     print("Pantallas protegidas: todas redirigen al ingreso")
 
     respuesta = cliente.post(
-        "/recepciones",
+        "/ingresos",
         data={"origen": "EMPRESA"},
         files={"archivo": ("ventas.csv", b"fecha;monto;referencia;descripcion\n",
                             "text/csv")},
@@ -59,7 +59,7 @@ def main():
          patch.object(principal.cadena, "sincronizar_con_pares", return_value=[]), \
          patch.object(principal.recepciones, "recibir", return_value=recepcion_api), \
          patch.object(principal.auditoria, "registrar"):
-        respuesta = cliente.post("/recepciones/obtener", data={"origen": "EMPRESA"})
+        respuesta = cliente.post("/ingresos/obtener", data={"origen": "EMPRESA"})
     assert respuesta.status_code == 303, respuesta.status_code
     assert "Archivo+obtenido+desde+PyME" in respuesta.headers["location"]
     print("Obtencion por API desde PyME: archivo recibido y verificado")
@@ -70,7 +70,7 @@ def main():
          patch.object(principal.alertas, "crear"), \
          patch.object(principal.auditoria, "registrar"):
         respuesta = cliente.post(
-            "/recepciones", data={"origen": "EMPRESA"},
+            "/ingresos", data={"origen": "EMPRESA"},
             files={"archivo": ("movimientos.txt", b"contenido", "text/plain")})
     assert respuesta.status_code == 303, respuesta.status_code
     assert "No+se+pudo+recibir+el+archivo" in respuesta.headers["location"]

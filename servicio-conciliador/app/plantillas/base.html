@@ -12,7 +12,7 @@
   <a class="marca" href="/">{% if logo_oficial %}<img class="marca-emblema" src="/estaticos/conciliachain.jpg" alt="ConciliaChain" width="38" height="38">{% endif %}<span><b>{{ servicio }}</b><small>Control de conciliación</small></span></a>
   <div class="nav-enlaces">
     <a class="{{ 'activo' if request.url.path == '/' else '' }}" href="/">Panel</a>
-    <a class="{{ 'activo' if request.url.path == '/recepciones' else '' }}" href="/recepciones">Ingresos</a>
+    <a class="{{ 'activo' if request.url.path == '/ingresos' else '' }}" href="/ingresos">Ingresos</a>
     <a class="{{ 'activo' if request.url.path == '/conciliacion' else '' }}" href="/conciliacion">Conciliación</a>
     <a class="{{ 'activo' if request.url.path == '/cadena' else '' }}" href="/cadena">Cadena</a>
     <a class="{{ 'activo' if request.url.path == '/visor' else '' }}" href="/visor">Visor</a>

@@ -7,7 +7,7 @@
   XML, archivo de ventas de la empresa en CSV). El sistema calcula su huella
   y la compara con el sello que el emisor dejo en la cadena: si el archivo fue
   tocado en el camino, queda marcado como alterado con el detalle.</p>
-  <form method="post" action="/recepciones" enctype="multipart/form-data" class="linea" data-carga-archivo>
+  <form method="post" action="/ingresos" enctype="multipart/form-data" class="linea" data-carga-archivo>
     <div><label>Origen</label>
       <label class="opcion"><input type="radio" name="origen" value="BANCO" checked> Banco</label>
       <label class="opcion"><input type="radio" name="origen" value="EMPRESA"> Empresa</label>
@@ -26,11 +26,11 @@
   el último extracto sellado del Banco. La conexión usa la API interna con
   token de servicio; al recibirlo se valida nuevamente su SHA-256.</p>
   <div class="linea">
-    <form method="post" action="/recepciones/obtener" class="enlinea">
+    <form method="post" action="/ingresos/obtener" class="enlinea">
       <input type="hidden" name="origen" value="EMPRESA">
       <button type="submit">Obtener último lote de PyME</button>
     </form>
-    <form method="post" action="/recepciones/obtener" class="enlinea">
+    <form method="post" action="/ingresos/obtener" class="enlinea">
       <input type="hidden" name="origen" value="BANCO">
       <button type="submit">Obtener último extracto del Banco</button>
     </form>
@@ -55,7 +55,7 @@
       <td class="detalle">{{ r.detalle }}</td>
       <td>{{ r.subido_por_email or '' }}</td>
       <td>
-        <form method="post" action="/recepciones/{{ r.id }}/eliminar"
+        <form method="post" action="/ingresos/{{ r.id }}/eliminar"
               onsubmit="return confirm('¿Eliminar esta recepción duplicada y su archivo recibido?');">
           <button type="submit" class="peligro">Eliminar</button>
         </form>
