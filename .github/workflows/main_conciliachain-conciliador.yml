@@ -1,0 +1,54 @@
+name: Desplegar Conciliador en Azure
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: azure-conciliachain-conciliador
+  cancel-in-progress: false
+
+jobs:
+  desplegar:
+    if: ${{ vars.AZURE_CONCILIADOR_CLIENT_ID != '' && vars.AZURE_TENANT_ID != '' && vars.AZURE_SUBSCRIPTION_ID != '' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      AZURE_APP_NAME: conciliachain-conciliador
+      AZURE_RESOURCE_GROUP: conciliachain-rg
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Preparar paquete de aplicación
+        run: |
+          git archive --format=zip --output="$RUNNER_TEMP/conciliador.zip" HEAD -- \
+            requirements.txt heroku_start.py servicio-conciliador
+
+      - name: Iniciar sesión en Azure
+        uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CONCILIADOR_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Configurar compilación y arranque
+        run: |
+          az webapp config appsettings set \
+            --resource-group "$AZURE_RESOURCE_GROUP" --name "$AZURE_APP_NAME" \
+            --settings SCM_DO_BUILD_DURING_DEPLOYMENT=true SERVICE=conciliador \
+            --output none
+          az webapp config set \
+            --resource-group "$AZURE_RESOURCE_GROUP" --name "$AZURE_APP_NAME" \
+            --startup-file 'python heroku_start.py' --output none
+
+      - name: Desplegar en App Service
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: ${{ env.AZURE_APP_NAME }}
+          package: ${{ runner.temp }}/conciliador.zip
