@@ -556,14 +556,16 @@ def ver_reporte(request: Request):
 
 
 @app.get("/reporte/pdf")
-def descargar_reporte(request: Request):
+def descargar_reporte(request: Request, vista_previa: bool = False):
     usuario = _exigir_usuario(request)
     auditoria.registrar(usuario["id"], "generar_reporte", "reportes", None,
                         {"formato": "pdf"}, seguridad.ip_de(request))
     contenido = reporte.generar(usuario)
+    disposicion = "inline" if vista_previa else "attachment"
     return Response(
         content=contenido, media_type="application/pdf",
-        headers={"Content-Disposition": "attachment; filename=reporte-conciliador.pdf"})
+        headers={"Content-Disposition": f"{disposicion}; filename=reporte-conciliador.pdf",
+                 "Cache-Control": "private, no-store"})
 
 
 @app.get("/reset", response_class=HTMLResponse)

@@ -38,7 +38,12 @@
   <a class="boton-reset" href="/reset">Reset</a>
 </nav>
 <main class="reporte">
-  <div class="acciones"><button onclick="window.print()">Imprimir reporte</button><a class="primario" href="/reporte/pdf">Descargar PDF</a><a href="/">Volver a la bandeja</a></div>
+  <div class="acciones">
+    <a class="primario" href="/reporte/pdf?vista_previa=true" target="_blank" rel="noopener">Ver PDF</a>
+    <a href="/reporte/pdf">Descargar PDF</a>
+    <button onclick="window.print()">Imprimir reporte</button>
+    <a href="/">Volver a la bandeja</a>
+  </div>
   <p class="kicker">Conciliador · Sistema de conciliación con integridad verificable</p>
   {% if logo_oficial %}<img src="/estaticos/conciliachain.jpg" width="130" height="130" alt="ConciliaChain" style="object-fit: contain">{% endif %}
   <h1>Reporte de conciliación</h1>
