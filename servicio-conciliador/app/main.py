@@ -33,7 +33,17 @@ from app import (alertas, auditoria, cadena, conciliacion, config, db, internos,
 
 BASE = Path(__file__).resolve().parent
 app = FastAPI(title="Servicio CONCILIADOR - herramienta del auditor")
-app.mount("/estaticos", StaticFiles(directory=str(BASE / "estaticos")),
+class ArchivosEstaticos(StaticFiles):
+    """Permite reutilizar CSS, imágenes y scripts durante cinco minutos."""
+
+    async def get_response(self, path, scope):
+        response = await super().get_response(path, scope)
+        if response.status_code in (200, 304):
+            response.headers.setdefault("Cache-Control", "public, max-age=300")
+        return response
+
+
+app.mount("/estaticos", ArchivosEstaticos(directory=str(BASE / "estaticos")),
           name="estaticos")
 plantillas = Jinja2Templates(directory=str(BASE / "plantillas"))
 plantillas.env.globals["logo_oficial"] = (BASE / "estaticos" / "conciliachain.jpg").is_file()

@@ -3,10 +3,13 @@ import httpx
 from fastapi import HTTPException
 from app import config, db, seguridad
 
+# Cliente compartido: reutiliza conexiones sin almacenar respuestas de identidad.
+_cliente = httpx.Client(timeout=30, follow_redirects=False)
+
 def consultar(ruta, datos=None):
     url = config.url_conciliador()
     try:
-        respuesta = httpx.request(
+        respuesta = _cliente.request(
             "POST" if datos is not None else "GET", url + "/interno/identidad/" + ruta,
             json=datos, headers={"X-Servicio-Token": config.token_servicio()},
             timeout=30, follow_redirects=False)
