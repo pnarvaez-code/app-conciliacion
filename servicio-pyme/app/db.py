@@ -23,11 +23,15 @@ from app import config
 
 def conectar():
     conexion = psycopg.connect(config.base_datos(), row_factory=dict_row)
-    with conexion.cursor() as cursor:
-        esquema = sql.Identifier(config.esquema())
-        cursor.execute(sql.SQL("CREATE SCHEMA IF NOT EXISTS {}").format(esquema))
-        cursor.execute(sql.SQL("SET search_path TO {}, public").format(esquema))
-    conexion.commit()
+    try:
+        with conexion.cursor() as cursor:
+            esquema = sql.Identifier(config.esquema())
+            cursor.execute(sql.SQL("CREATE SCHEMA IF NOT EXISTS {}").format(esquema))
+            # Un pool por transacción puede cambiar de servidor al hacer commit.
+            cursor.execute(sql.SQL("SET LOCAL search_path TO {}, public").format(esquema))
+    except Exception:
+        conexion.close()
+        raise
     return conexion
 
 
