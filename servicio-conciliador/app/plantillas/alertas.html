@@ -18,15 +18,19 @@
         <a class="secundario" href="/conciliacion#diferencias">Ver diferencias</a>
         {% endif %}
         {% if a.estado == 'nueva' %}
-        <form method="post" action="/alertas/{{ a.id }}/estado" class="enlinea">
+        {% if usuario.rol in ('administrador', 'operador') %}
+<form method="post" action="/alertas/{{ a.id }}/estado" class="enlinea">
           <input type="hidden" name="estado" value="leida">
           <button class="secundario">Marcar leida</button>
         </form>
+{% endif %}
         {% elif a.estado == 'leida' %}
-        <form method="post" action="/alertas/{{ a.id }}/estado" class="enlinea">
+        {% if usuario.rol in ('administrador', 'operador') %}
+<form method="post" action="/alertas/{{ a.id }}/estado" class="enlinea">
           <input type="hidden" name="estado" value="resuelta">
           <button class="secundario">Resolver</button>
         </form>
+{% endif %}
         {% endif %}
       </td>
     </tr>

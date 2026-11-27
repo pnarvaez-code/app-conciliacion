@@ -8,10 +8,13 @@ from app import db, seguridad
 
 def verificar(request, usuario):
     rol = usuario.get("rol", "consulta")
+    if rol not in ("administrador", "operador", "consulta"):
+        raise HTTPException(403, "Perfil de usuario no válido.")
     if request.url.path.startswith("/usuarios") or request.url.path in ("/reset", "/auditoria/reset"):
         if rol != "administrador":
             raise HTTPException(403, "Se requieren privilegios de administrador.")
-    elif request.method not in ("GET", "HEAD") and request.url.path != "/sesion/actividad":
+    elif (request.method not in ("GET", "HEAD") and request.url.path != "/sesion/actividad") or (
+            request.url.path.startswith("/movimientos/") and request.url.path.endswith("/editar")):
         if rol not in ("administrador", "operador"):
             raise HTTPException(403, "Su perfil solo permite consultar.")
 

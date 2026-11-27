@@ -2,9 +2,11 @@
 {% block contenido %}
 <h2>Cadena de bloques (copia del conciliador)</h2>
 <section class="tarjeta">
-  <form method="post" action="/cadena/sincronizar">
+  {% if usuario.rol in ('administrador', 'operador') %}
+<form method="post" action="/cadena/sincronizar">
     <button type="submit">Sincronizar con los servicios</button>
   </form>
+{% endif %}
   <p class="tenue">El conciliador mantiene una copia completa de la cadena.
   Sincronizar pide a la PYME y al banco los bloques que falten; cada bloque se
   valida antes de guardarse.</p>

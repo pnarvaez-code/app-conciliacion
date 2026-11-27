@@ -20,6 +20,7 @@
   <div class="nav-acciones"><a class="boton-reporte" href="/reporte">Reporte</a>{% if usuario.rol == 'administrador' %}<a class="boton-reset" href="/reset">Reset</a>{% endif %}<span class="salir"><a href="/salir">{{ usuario.email }} · Salir</a></span></div>
 </nav>
 <main>
+{% if usuario.rol == 'consulta' %}<p class="aviso">Modo consulta: puede revisar los datos y descargar reportes.</p>{% endif %}
 {% if request.query_params.get('aviso') %}
   <div class="aviso">{{ request.query_params.get('aviso') }}</div>
 {% endif %}
