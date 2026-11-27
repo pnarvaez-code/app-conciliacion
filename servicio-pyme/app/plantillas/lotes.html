@@ -1,19 +1,25 @@
 {% extends "base.html" %}
 {% block contenido %}
 <h2>Cierres del dia y sellos</h2>
+{% if usuario.rol in ('administrador', 'operador') %}
 <section class="tarjeta">
   <div class="linea">
-    <form method="post" action="/lotes/cerrar">
+    {% if usuario.rol in ('administrador', 'operador') %}
+<form method="post" action="/lotes/cerrar">
       <button type="submit">Cerrar lote y exportar</button>
     </form>
-    <form method="post" action="/lotes/reemitir">
+{% endif %}
+    {% if usuario.rol in ('administrador', 'operador') %}
+<form method="post" action="/lotes/reemitir">
       <button class="secundario" type="submit">Re-emitir ultimo lote</button>
     </form>
+{% endif %}
   </div>
   <p class="tenue">Cerrar genera el archivo CSV, lo guarda y crea el bloque
   sellado (se propaga a los otros servicios). Re-emitir sella una version nueva
   del mismo lote: la anterior queda como historial.</p>
 </section>
+{% endif %}
 
 <section class="tarjeta">
   <h3>Lotes emitidos</h3>
@@ -55,9 +61,11 @@
 </section>
 <section class="tarjeta">
   <h3>{{ 'Mis extractos emitidos' if servicio == 'BANCO' else 'Mis lotes emitidos' }}</h3>
-  <form method="post" action="/lotes/verificar">
+  {% if usuario.rol in ('administrador', 'operador') %}
+<form method="post" action="/lotes/verificar">
     <button type="submit">Verificar mis lotes emitidos</button>
   </form>
+{% endif %}
   <p class="tenue">Aplica los chequeos del emisor sobre cada lote propio: el
   archivo guardado conserva su huella y los movimientos de la base coinciden
   con el sello. Si algo cambio, queda la alerta con el detalle y el registro

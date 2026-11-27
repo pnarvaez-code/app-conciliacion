@@ -1,26 +1,32 @@
 {% extends "base.html" %}
 {% block contenido %}
 <h2>Extractos y sellos</h2>
+{% if usuario.rol in ('administrador', 'operador') %}
 <section class="tarjeta">
   <div class="linea">
-    <form method="post" action="/lotes/cerrar">
+    {% if usuario.rol in ('administrador', 'operador') %}
+<form method="post" action="/lotes/cerrar">
       <label>Formato del extracto</label>
       <label class="opcion"><input type="radio" name="formato" value="csv" checked> CSV</label>
       <label class="opcion"><input type="radio" name="formato" value="xml"> XML</label>
       <button type="submit">Emitir extracto</button>
     </form>
-    <form method="post" action="/lotes/reemitir">
+{% endif %}
+    {% if usuario.rol in ('administrador', 'operador') %}
+<form method="post" action="/lotes/reemitir">
       <label>Re-emision</label>
       <label class="opcion"><input type="radio" name="formato" value="csv" checked> CSV</label>
       <label class="opcion"><input type="radio" name="formato" value="xml"> XML</label>
       <button class="secundario" type="submit">Re-emitir ultimo extracto</button>
     </form>
+{% endif %}
   </div>
   <p class="tenue">Emitir genera el extracto, lo guarda y crea el bloque sellado
   (se propaga a los otros servicios). Re-emitir sella una version nueva del
   mismo extracto: la anterior queda como historial. El extracto es el que viaja
   hacia la empresa y el conciliador.</p>
 </section>
+{% endif %}
 
 <section class="tarjeta">
   <h3>Extractos emitidos</h3>
@@ -62,9 +68,11 @@
 </section>
 <section class="tarjeta">
   <h3>{{ 'Mis extractos emitidos' if servicio == 'BANCO' else 'Mis lotes emitidos' }}</h3>
-  <form method="post" action="/lotes/verificar">
+  {% if usuario.rol in ('administrador', 'operador') %}
+<form method="post" action="/lotes/verificar">
     <button type="submit">Verificar mis lotes emitidos</button>
   </form>
+{% endif %}
   <p class="tenue">Aplica los chequeos del emisor sobre cada lote propio: el
   archivo guardado conserva su huella y los movimientos de la base coinciden
   con el sello. Si algo cambio, queda la alerta con el detalle y el registro

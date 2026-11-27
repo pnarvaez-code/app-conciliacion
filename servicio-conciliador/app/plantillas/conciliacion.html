@@ -17,9 +17,11 @@
 </section>
 <section class="tarjeta">
   {% if puede_ejecutar %}
-  <form method="post" action="/conciliacion">
+  {% if usuario.rol in ('administrador', 'operador') %}
+<form method="post" action="/conciliacion">
     <button type="submit">Ejecutar conciliacion</button>
   </form>
+{% endif %}
   <p class="tenue">Se usan una sola vez las ultimas recepciones intactas de cada parte: los
   archivos alterados quedan fuera. Los pendientes se clasifican por tipo de
   diferencia para el informe.</p>

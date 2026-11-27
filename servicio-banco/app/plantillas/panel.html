@@ -22,9 +22,11 @@
   <div class="indicador"><span>{{ resumen.en_lote }}</span>en extractos sellados</div>
 </div>
 
+{% if usuario.rol in ('administrador', 'operador') %}
 <section class="tarjeta">
   <h3>Registrar movimiento</h3>
-  <form method="post" action="/movimientos" class="linea">
+  {% if usuario.rol in ('administrador', 'operador') %}
+<form method="post" action="/movimientos" class="linea">
     <div><label>Fecha</label><input type="date" name="fecha"></div>
     <div><label>Monto</label><input type="number" name="monto" min="1" required></div>
     <div><label>Descripcion</label><input type="text" name="descripcion"
@@ -33,6 +35,7 @@
          placeholder="opcional"></div>
     <div><button type="submit">Registrar</button></div>
   </form>
+{% endif %}
   <p class="tenue">Los movimientos quedan pendientes hasta la emision del
   extracto, donde se generan el archivo y el sello de la cadena.</p>
 </section>
@@ -42,7 +45,8 @@
   <p class="tenue">Pegue muchos movimientos, una por linea, o cargue un archivo
   CSV/XML. Formato: <code>fecha;monto;referencia;descripcion</code>. La fecha
   acepta dd/mm/aaaa o aaaa-mm-dd; la referencia es opcional.</p>
-  <form method="post" action="/movimientos/importar" enctype="multipart/form-data" data-carga-archivo>
+  {% if usuario.rol in ('administrador', 'operador') %}
+<form method="post" action="/movimientos/importar" enctype="multipart/form-data" data-carga-archivo>
     <label for="texto">Texto de movimientos</label>
     <textarea id="texto" name="texto" rows="6"
       placeholder="01/11/2026;125000;;VENTA TARJETA"></textarea>
@@ -52,10 +56,13 @@
       <button type="submit">Importar movimientos</button>
     </div>
   </form>
+{% endif %}
   <p class="tenue">Use texto o archivo, no ambos. Las referencias repetidas se
   omiten y cada importacion queda registrada en auditoria. El envío se bloquea
   mientras se procesa para evitar una carga duplicada.</p>
 </section>
+
+{% endif %}
 
 <section class="tarjeta">
   <h3>Listado</h3>
@@ -88,11 +95,13 @@
           {% else %}<span class="etiqueta sellado">en extracto sellado</span>{% endif %}</td>
       <td>{{ m.lote_etiqueta or 'Sin lote' }}</td>
       <td>
-        {% if m.estado == 'pendiente' %}
+        {% if m.estado == 'pendiente' and usuario.rol in ('administrador', 'operador') %}
         <a href="/movimientos/{{ m.id }}/editar">Editar</a>
-        <form method="post" action="/movimientos/{{ m.id }}/eliminar" class="enlinea">
+        {% if usuario.rol in ('administrador', 'operador') %}
+<form method="post" action="/movimientos/{{ m.id }}/eliminar" class="enlinea">
           <button class="peligro">Eliminar</button>
         </form>
+{% endif %}
         {% endif %}
       </td>
     </tr>
